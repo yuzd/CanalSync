@@ -22,7 +22,7 @@ namespace MysqlCanalMq.Canal
         private readonly RabitMqOption _rabitMqOption;
         private ICanalConnector _canalConnector;
         private System.Threading.Timer _canalTimer;
-        private readonly IProduceRabitMq _produceRabitMq;
+        private IProduceRabitMq _produceRabitMq;
 
         public CanalService(ILogger<CanalService> logger, IOptions<CanalOption> canalOption, IOptions<RabitMqOption> rabitMqOption)
         {
@@ -52,7 +52,6 @@ namespace MysqlCanalMq.Canal
                 throw new ArgumentNullException("Rabit param in appsettings.json is not correct!");
             }
 
-            _produceRabitMq = RabitMqFactory.CreateProduceRabitMq(_rabitMqOption);
         }
 
 
@@ -61,6 +60,7 @@ namespace MysqlCanalMq.Canal
         {
             try
             {
+                _produceRabitMq = RabitMqFactory.CreateProduceRabitMq(_rabitMqOption);
                 _canalConnector = CanalConnectors.NewSingleConnector(_canalOption.Host, _canalOption.Port, _canalOption.Destination, _canalOption.MysqlName, _canalOption.MysqlPwd);
                 _canalConnector.Connect();
                 _canalConnector.Subscribe(".*\\..*");
