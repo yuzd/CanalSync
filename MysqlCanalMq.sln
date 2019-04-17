@@ -3,7 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.421
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MysqlCanalMq", "MysqlCanalMq\MysqlCanalMq.csproj", "{8EDA7B93-36E0-4E32-AAC7-B4CF4428FCB7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MysqlCanalMq", "MysqlCanalMq\MysqlCanalMq.csproj", "{8EDA7B93-36E0-4E32-AAC7-B4CF4428FCB7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MysqlCanalMq.Client", "MysqlCanalMq.Client\MysqlCanalMq.Client.csproj", "{DCA82B1D-231F-4608-A944-5B57B961E299}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MysqlCanalMq.Common", "MysqlCanalMq.Common\MysqlCanalMq.Common.csproj", "{27176F67-F4F0-4CF0-B07F-683B8C1152C4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MysqlCanalMq.Db", "MysqlCanalMq.Db\MysqlCanalMq.Db.csproj", "{A3288844-EE24-430E-8C6B-370CFDCC474F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MysqlCanalMq.Models", "MysqlCanalMq.Models\MysqlCanalMq.Models.csproj", "{D25FA843-C022-465D-8EF8-CB3DF67EBB9B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +23,22 @@ Global
 		{8EDA7B93-36E0-4E32-AAC7-B4CF4428FCB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8EDA7B93-36E0-4E32-AAC7-B4CF4428FCB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8EDA7B93-36E0-4E32-AAC7-B4CF4428FCB7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DCA82B1D-231F-4608-A944-5B57B961E299}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCA82B1D-231F-4608-A944-5B57B961E299}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCA82B1D-231F-4608-A944-5B57B961E299}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCA82B1D-231F-4608-A944-5B57B961E299}.Release|Any CPU.Build.0 = Release|Any CPU
+		{27176F67-F4F0-4CF0-B07F-683B8C1152C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27176F67-F4F0-4CF0-B07F-683B8C1152C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{27176F67-F4F0-4CF0-B07F-683B8C1152C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27176F67-F4F0-4CF0-B07F-683B8C1152C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3288844-EE24-430E-8C6B-370CFDCC474F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3288844-EE24-430E-8C6B-370CFDCC474F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3288844-EE24-430E-8C6B-370CFDCC474F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3288844-EE24-430E-8C6B-370CFDCC474F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D25FA843-C022-465D-8EF8-CB3DF67EBB9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D25FA843-C022-465D-8EF8-CB3DF67EBB9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D25FA843-C022-465D-8EF8-CB3DF67EBB9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D25FA843-C022-465D-8EF8-CB3DF67EBB9B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

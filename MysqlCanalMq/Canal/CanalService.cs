@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using MysqlCanalMq.Common.RabitMQ;
+using Newtonsoft.Json;
 
 namespace MysqlCanalMq.Canal
 {
@@ -17,10 +19,12 @@ namespace MysqlCanalMq.Canal
     {
         private readonly ILogger _logger;
         private readonly CanalOption _canalOption;
+        private readonly RabitMqOption _rabitMqOption;
         private ICanalConnector _canalConnector;
         private System.Threading.Timer _canalTimer;
+        private readonly IProduceRabitMq _produceRabitMq;
 
-        public CanalService(ILogger<CanalService> logger, IOptions<CanalOption> canalOption)
+        public CanalService(ILogger<CanalService> logger, IOptions<CanalOption> canalOption, IOptions<RabitMqOption> rabitMqOption)
         {
             _logger = logger;
             _canalOption = canalOption?.Value;
@@ -35,6 +39,20 @@ namespace MysqlCanalMq.Canal
             {
                 throw new ArgumentNullException("Canal param in appsettings.json is not correct!");
             }
+
+            if (rabitMqOption == null)
+            {
+                throw new ArgumentNullException("Rabit in appsettings.json is empty!");
+            }
+
+            _rabitMqOption = rabitMqOption?.Value;
+            if (string.IsNullOrEmpty(_rabitMqOption.Host) || string.IsNullOrEmpty(_rabitMqOption.UserName) ||
+                string.IsNullOrEmpty(_rabitMqOption.Password) || _rabitMqOption.Port < 1)
+            {
+                throw new ArgumentNullException("Rabit param in appsettings.json is not correct!");
+            }
+
+            _produceRabitMq = RabitMqFactory.CreateProduceRabitMq(_rabitMqOption);
         }
 
 
@@ -75,6 +93,7 @@ namespace MysqlCanalMq.Canal
         {
             _canalConnector = null;
             _canalTimer.Dispose();
+            _produceRabitMq.Dispose();
         }
 
 
@@ -139,43 +158,30 @@ namespace MysqlCanalMq.Canal
                     //变更类型 insert/update/delete 等等
                     EventType eventType = rowChange.EventType;
                     //输出binlog信息 表名 数据库名 变更类型
-                    _logger.LogInformation($"================> binlog[{entry.Header.LogfileName}:{entry.Header.LogfileOffset}] , name[{entry.Header.SchemaName},{entry.Header.TableName}] , eventType :{eventType}");
+                    //_logger.LogInformation($"================> binlog[{entry.Header.LogfileName}:{entry.Header.LogfileOffset}] , name[{entry.Header.SchemaName},{entry.Header.TableName}] , eventType :{eventType}");
 
                     //输出 insert/update/delete 变更类型列数据
                     foreach (var rowData in rowChange.RowDatas)
                     {
                         if (eventType == EventType.Delete)
                         {
-                            PrintColumn(rowData.BeforeColumns.ToList());
+                            var list = rowData.BeforeColumns.ToList();
                         }
                         else if (eventType == EventType.Insert)
                         {
-                            PrintColumn(rowData.AfterColumns.ToList());
+                            var list = rowData.AfterColumns.ToList();
                         }
                         else
                         {
-                            _logger.LogInformation("-------> before");
-                            PrintColumn(rowData.BeforeColumns.ToList());
-                            _logger.LogInformation("-------> after");
-                            PrintColumn(rowData.AfterColumns.ToList());
+                            var bforeList = rowData.BeforeColumns.ToList();
+                            var afterList = rowData.AfterColumns.ToList();
                         }
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// 输出每个列的详细数据
-        /// </summary>
-        /// <param name="columns"></param>
-        private static void PrintColumn(List<Column> columns)
-        {
-            foreach (var column in columns)
-            {
-                //输出列明 列值 是否变更
-                Console.WriteLine($"{column.Name} ： {column.Value}  update=  {column.Updated}");
-            }
-        }
+
 
     }
 }

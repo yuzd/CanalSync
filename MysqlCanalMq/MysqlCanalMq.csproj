@@ -25,4 +25,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\MysqlCanalMq.Common\MysqlCanalMq.Common.csproj" />
+  </ItemGroup>
+
 </Project>
