@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using MysqlCanalMq.Models;
+using MysqlCanalMq.Models.canal;
 
 namespace MysqlCanalMq.Common.RabitMQ
 {
@@ -14,9 +15,8 @@ namespace MysqlCanalMq.Common.RabitMQ
 
     public interface IProduceRabitMq
     {
-        void Produce<T>(string evnetType, T message, string canalDestination = null) where T : CanalMqBasic;
+        void Produce(DataChange message, string de = null);
 
-        void Dispose();
     }
 
     public class RabitMqFactory
@@ -39,7 +39,7 @@ namespace MysqlCanalMq.Common.RabitMQ
         /// <returns></returns>
         public static IConsumeRabitMq CreateConsumeRabitMqq(RabitMqOption option)
         {
-            return new RabitMq(option);
+            return null;
         }
     }
 }

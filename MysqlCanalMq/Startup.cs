@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CanalSharp.Common.Logging;
+using DbModels;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -11,9 +12,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MysqlCanalMq.Canal;
+using MysqlCanalMq.Common.RabitMQ;
+using MysqlCanalMq.Db;
 using MysqlCanalMq.Models;
-using NLog;
-using NLog.Config;
 using NLog.Extensions.Logging;
 
 namespace MysqlCanalMq
@@ -42,6 +43,15 @@ namespace MysqlCanalMq
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             services.Configure<CanalOption>(Configuration.GetSection("Canal"));
+            services.Configure<RabitMqOption>(Configuration.GetSection("Rabit"));
+
+            //#region AntORM
+            //services.AddMysqlEntitys<DB>("from", ops =>
+            //{
+            //    ops.IsEnableLogTrace = false;
+            //});
+            //MysqlCanalMqDbInfo.UseDb<DB>();
+            //#endregion
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -71,7 +81,11 @@ namespace MysqlCanalMq
             logging.AddNLog();
             #endregion
 
+            //#region AntORM
 
+            //AntData.ORM.Common.Configuration.UseDBConfig(Configuration);
+
+            //#endregion
             //设置 NLog
             CanalSharpLogManager.LoggerFactory.AddNLog();
 

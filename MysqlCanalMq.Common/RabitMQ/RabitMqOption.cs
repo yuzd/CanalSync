@@ -57,6 +57,11 @@ namespace MysqlCanalMq.Common.RabitMQ
             {
                 connect += $"timeout={TimeOut};";
             }
+
+            if (connect.EndsWith(";"))
+            {
+                connect = connect.Substring(0, connect.Length - 1);
+            }
             return connect;
         }
     }

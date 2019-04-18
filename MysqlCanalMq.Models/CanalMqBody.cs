@@ -6,7 +6,9 @@ namespace MysqlCanalMq.Models
 {
     public class CanalMqBody
     {
-        public CanalMqBasic DbModel { get; set; }
+        public object DbModel { get; set; }
         public string EventType { get; set; }
+        public string DbName { get; set; }
+        public string TbName { get; set; }
     }
 }

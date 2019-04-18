@@ -24,7 +24,9 @@ namespace MysqlCanalMq.Models
         public string Destination { get; set; }
         public string MysqlName { get; set; }
         public string MysqlPwd { get; set; }
-        
-        
+        public int Timer { get; set; }
+        public int GetCountsPerTimes { get; set; }
+
+        public List<string> Tables { get; set; }
     }
 }
