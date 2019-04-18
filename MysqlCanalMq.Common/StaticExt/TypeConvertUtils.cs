@@ -1,11 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace MysqlCanalMq.Common.StaticExt
 {
-    public class TypeConvertUtils
+    public static class TypeConvertUtils
     {
+
+        public static T JsonToObject<T>(this string str)
+        {
+            try
+            {
+                var resultModel = JsonConvert.DeserializeObject<T>(str);
+                return resultModel;
+            }
+            catch (Exception)
+            {
+                return default(T);
+            }
+        }
+
         public static object Parse(object value, Type propType)
         {
             try

@@ -8,13 +8,9 @@ using MysqlCanalMq.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using AntData.ORM.Reflection;
-using AspectCore.Extensions.Reflection;
 using MysqlCanalMq.Common.RabitMQ;
-using MysqlCanalMq.Common.StaticExt;
 using MysqlCanalMq.Models.canal;
 using Newtonsoft.Json;
 
@@ -75,6 +71,8 @@ namespace MysqlCanalMq.Canal
                 _canalConnector.Rollback();
                 _canalTimer = new System.Threading.Timer(CanalGetData, null, _canalOption.Timer * 1000, _canalOption.Timer * 1000);
                 _logger.LogInformation("canal client start success...");
+
+                AppDomain.CurrentDomain.ProcessExit += CurrentDomainOnProcessExit;
             }
             catch (Exception ex)
             {
@@ -83,8 +81,29 @@ namespace MysqlCanalMq.Canal
             return Task.CompletedTask;
         }
 
+        private void CurrentDomainOnProcessExit(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_isDispose) return;
+                Stop();
+                Dispose();
+            }
+            catch
+            {
+                //ignore
+            }
+        }
 
+        private bool _isDispose = false;
         public Task StopAsync(CancellationToken cancellationToken)
+        {
+            _isDispose = true;
+            Stop();
+            return Task.CompletedTask;
+        }
+
+        private void Stop()
         {
             try
             {
@@ -96,11 +115,12 @@ namespace MysqlCanalMq.Canal
             {
                 _logger.LogError(ex, "canal client stop error...");
             }
-            return Task.CompletedTask;
         }
+
 
         public void Dispose()
         {
+            _isDispose = true;
             _canalConnector = null;
             _canalTimer.Dispose();
         }
@@ -145,6 +165,7 @@ namespace MysqlCanalMq.Canal
         private void SendToMQ(List<Entry> entrys, long batchId)
         {
             var batchSuccess = true;
+            var count = 0;
             foreach (var entry in entrys)
             {
                 if (entry.EntryType == EntryType.Transactionbegin || entry.EntryType == EntryType.Transactionend)
@@ -202,7 +223,7 @@ namespace MysqlCanalMq.Canal
                         if (eventType == EventType.Delete)
                         {
                             dataChange.EventType = "DELETE";
-                            dataChange.AfterColumnList = DoConvertDataColumn(rowData.AfterColumns.ToList());
+                            dataChange.BeforeColumnList = DoConvertDataColumn(rowData.BeforeColumns.ToList());
                         }
                         else if (eventType == EventType.Insert)
                         {
@@ -224,6 +245,7 @@ namespace MysqlCanalMq.Canal
                         try
                         {
                             _produceRabitMq.Produce(dataChange, _canalOption.Destination);
+                            count++;
                         }
                         catch (Exception e)
                         {
@@ -248,6 +270,7 @@ namespace MysqlCanalMq.Canal
             if (batchSuccess)
             {
                 _canalConnector.Ack(batchId);
+                _logger.LogInformation($"batchId:{batchId},count:{count} send to mq success");
             }
         }
 
@@ -273,55 +296,6 @@ namespace MysqlCanalMq.Canal
 
 
 
-
-        private object GetDbModel(System.Type type, IList<Column> cols)
-        {
-            try
-            {
-                if (cols == null || cols.Count < 1)
-                {
-                    return null;
-                }
-                var constructorInfo = type.GetTypeInfo().GetConstructor(new System.Type[0]);
-                var reflector = constructorInfo.GetReflector();
-                var obj = reflector.Invoke();
-                var pros = type.GetCanWritePropertyInfo().ToDictionary(r => r.Name.ToLower(), y => y);
-                if (pros.Count < 1)
-                {
-                    _logger.LogWarning("CanalService.ParseDbModel", $"类型:{type.Name} 没有可写的property");
-                    return null;
-                }
-                foreach (var c in cols)
-                {
-                    var key = c.Name.ToLower();
-
-                    if (!pros.ContainsKey(key))
-                    {
-                        continue;
-                    }
-
-                    var prop = pros[key];
-                    var propType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-
-                    if (c.IsNull)
-                    {
-                        if (prop.ToString().Contains("System.Nullable"))
-                        {
-                            prop.FastSetValue(obj, null);
-                        }
-                        continue;
-                    }
-                    var value = TypeConvertUtils.Parse(c.Value, propType);
-                    prop.FastSetValue(obj, value);
-                }
-                return obj;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("CanalService.ParseDbModel", ex);
-                return null;
-            }
-        }
     }
 
 

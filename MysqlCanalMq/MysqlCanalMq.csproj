@@ -9,7 +9,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AspectCore.Extensions.Reflection" Version="1.2.0" />
     <PackageReference Include="CanalSharp.Client" Version="0.3.2" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.1.2" PrivateAssets="All" />
@@ -30,6 +29,12 @@
     <ProjectReference Include="..\MysqlCanalMq.Common\MysqlCanalMq.Common.csproj" />
     <ProjectReference Include="..\MysqlCanalMq.Db\MysqlCanalMq.Db.csproj" />
     <ProjectReference Include="..\MysqlCanalMq.Models\MysqlCanalMq.Models.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

@@ -46,7 +46,7 @@ namespace MysqlCanalMq.Common.RabitMQ
                             byte[] body = Encoding.UTF8.GetBytes(messageString);
                             var properties = channel.CreateBasicProperties();
                             properties.Persistent = true; //使消息持久化
-                            channel.QueueDeclare(topic, false, false, false);
+                            channel.QueueDeclare(topic, true, false, false);
                             channel.QueueBind(topic, "canal", topic);
                             channel.ConfirmSelect();
                             channel.BasicPublish("canal", topic, properties, body);

@@ -18,5 +18,7 @@ namespace MysqlCanalMq.Common.RabitMQ
 
         public bool PublisherStopWhenError { get; set; }
 
+        public string CanalDestinationName { get; set; }
     }
+
 }

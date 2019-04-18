@@ -14,7 +14,8 @@
 
   "GenerateAssociations": true, //是否生成外键
 
-  "ConnectionString": "Server=test2019.litozoey.com;Port=3306;Database=lito;Uid=root;Pwd=cqmyg,1$D$$;charset=utf8;SslMode=none", //DB链接字符串
+  "ConnectionString": "Server=192.168.220.128;Port=3306;Database=test;Uid=root;Pwd=123456;charset=utf8;SslMode=none", //DB链接字符串
+  //"Server=test2019.litozoey.com;Port=3306;Database=lito;Uid=root;Pwd=cqmyg,1$D$$;charset=utf8;SslMode=none"
 
   "OutFileName": "DbModels", //生成的cs文件名称
 

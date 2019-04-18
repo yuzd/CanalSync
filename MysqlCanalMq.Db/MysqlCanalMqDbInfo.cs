@@ -34,8 +34,8 @@ namespace MysqlCanalMq.Db
                 //获取该类型所有的 属性
                 foreach (var prop in type.GetProperties())
                 {
-                    if (!prop.PropertyType.IsGenericParameter) continue;
-                    var genericType = prop.PropertyType.GetGenericTypeDefinition();
+                    if(prop.PropertyType.GenericTypeArguments == null ||prop.PropertyType.GenericTypeArguments.Length!=1)continue;
+                    var genericType = prop.PropertyType.GenericTypeArguments[0];
                     if (genericType == null) continue;
                     var tbAttribute = genericType.GetCustomAttributes(
                         typeof(TableAttribute), true
@@ -48,7 +48,7 @@ namespace MysqlCanalMq.Db
                     {
                         continue;
                     }
-                    var topic = !string.IsNullOrEmpty(tbAttribute.Database) ? $"{tbAttribute.Database}." : "";
+                    var topic = !string.IsNullOrEmpty(tbAttribute.Db) ? $"{tbAttribute.Db}." : "";
                     topic += tbAttribute.Name;
                     DbTypeList.TryAdd(topic, genericType);
                 }
