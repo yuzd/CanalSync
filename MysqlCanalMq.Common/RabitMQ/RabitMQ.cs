@@ -23,7 +23,8 @@ namespace MysqlCanalMq.Common.RabitMQ
 
 
         /// <summary>
-        /// 单消息入队
+        /// 单消息入队 开启确认模式
+        /// 同步模式 保证消息一定是成功投递
         /// </summary>
         public void Produce(DataChange message, string de = null)
         {
@@ -47,7 +48,13 @@ namespace MysqlCanalMq.Common.RabitMQ
                             properties.Persistent = true; //使消息持久化
                             channel.QueueDeclare(topic, false, false, false);
                             channel.QueueBind(topic, "canal", topic);
+                            channel.ConfirmSelect();
                             channel.BasicPublish("canal", topic, properties, body);
+                            bool success = channel.WaitForConfirms(new TimeSpan(0, 0, 60));
+                            if (!success)
+                            {
+                                throw new Exception("WaitForConfirms fail");
+                            }
                         }
                     }
                 }

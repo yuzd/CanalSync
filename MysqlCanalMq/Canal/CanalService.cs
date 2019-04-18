@@ -28,6 +28,7 @@ namespace MysqlCanalMq.Canal
         private ICanalConnector _canalConnector;
         private System.Threading.Timer _canalTimer;
         private IProduceRabitMq _produceRabitMq;
+        private AutoResetEvent autoResetEvent = new AutoResetEvent(false);
         public CanalService(ILogger<CanalService> logger, IOptions<CanalOption> canalOption, IOptions<RabitMqOption> rabitMqOption)
         {
             _logger = logger;
@@ -67,6 +68,7 @@ namespace MysqlCanalMq.Canal
             try
             {
                 _produceRabitMq = RabitMqFactory.CreateProduceRabitMq(_rabitMqOption);
+                _logger.LogInformation("rabbit client start success...");
                 _canalConnector = CanalConnectors.NewSingleConnector(_canalOption.Host, _canalOption.Port, _canalOption.Destination, _canalOption.MysqlName, _canalOption.MysqlPwd);
                 _canalConnector.Connect();
                 _canalConnector.Subscribe(".*\\..*");
@@ -76,10 +78,11 @@ namespace MysqlCanalMq.Canal
             }
             catch (Exception ex)
             {
-                _logger.LogError("canal client start error...", ex);
+                _logger.LogError(ex, "canal client start error...");
             }
             return Task.CompletedTask;
         }
+
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
@@ -91,7 +94,7 @@ namespace MysqlCanalMq.Canal
             }
             catch (Exception ex)
             {
-                _logger.LogError("canal client stop error...", ex);
+                _logger.LogError(ex, "canal client stop error...");
             }
             return Task.CompletedTask;
         }
@@ -216,16 +219,27 @@ namespace MysqlCanalMq.Canal
                         {
                             continue;
                         }
-
+                    RETRY:
+                        var isPublishErr = false;
                         try
                         {
                             _produceRabitMq.Produce(dataChange, _canalOption.Destination);
-
                         }
                         catch (Exception e)
                         {
-                            batchSuccess = false;
+                            isPublishErr = true;
                             _logger.LogError(e, "canal produce to mq error:" + JsonConvert.SerializeObject(dataChange));
+                        }
+
+                        if (isPublishErr && _rabitMqOption.PublisherStopWhenError)
+                        {
+                            Thread.Sleep(TimeSpan.FromSeconds(_rabitMqOption.WaitTimeWhenError));
+                            goto RETRY;
+                        }
+
+                        if (isPublishErr)
+                        {
+                            batchSuccess = false;
                         }
                     }
                 }
