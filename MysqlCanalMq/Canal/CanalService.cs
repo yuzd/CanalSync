@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using MysqlCanalMq.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -166,6 +167,8 @@ namespace MysqlCanalMq.Canal
         {
             var batchSuccess = true;
             var count = 0;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
             foreach (var entry in entrys)
             {
                 if (entry.EntryType == EntryType.Transactionbegin || entry.EntryType == EntryType.Transactionend)
@@ -270,7 +273,9 @@ namespace MysqlCanalMq.Canal
             if (batchSuccess)
             {
                 _canalConnector.Ack(batchId);
-                _logger.LogInformation($"batchId:{batchId},count:{count} send to mq success");
+                stopwatch.Stop();
+                var doutime = stopwatch.Elapsed.TotalSeconds;
+                _logger.LogInformation($"batchId:{batchId},count:{count},time:{(doutime > 300 ? stopwatch.Elapsed.TotalMinutes + "分" : doutime + "秒")} send to mq success");
             }
         }
 
