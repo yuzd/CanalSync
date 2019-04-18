@@ -132,7 +132,7 @@ namespace MysqlCanalMq.Common.Consume
                         var insertR = _dbContext.Insert(entity) > 0;
                         if (!insertR)
                         {
-                            OnAction?.Invoke(MessageLevel.Error, $"_dbContext.Insert(entity) return error", new Exception(message.Content));
+                            OnAction?.Invoke(MessageLevel.Error, $"_dbContext.Update(entity) return error", new Exception(message.Content));
                             return;
                         }
                     }
