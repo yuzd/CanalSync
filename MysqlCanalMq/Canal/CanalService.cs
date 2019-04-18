@@ -222,6 +222,7 @@ namespace MysqlCanalMq.Canal
                             TableName = entry.Header.TableName
                         };
 
+                       
 
                         if (eventType == EventType.Delete)
                         {
@@ -243,6 +244,19 @@ namespace MysqlCanalMq.Canal
                         {
                             continue;
                         }
+                        
+                        var cloumns = dataChange.AfterColumnList == null || !dataChange.AfterColumnList.Any()
+                            ? dataChange.BeforeColumnList
+                            : dataChange.AfterColumnList;
+
+                        var primaryKey = cloumns.FirstOrDefault(r => r.IsKey);
+                        if (primaryKey == null || string.IsNullOrEmpty(primaryKey.Value))
+                        {
+                            //没有主键
+                            _logger.LogError($"DbName: {dataChange.DbName},TbName:{dataChange.TableName} without primaryKey :" + JsonConvert.SerializeObject(dataChange));
+                            continue;
+                        }
+                        
                     RETRY:
                         var isPublishErr = false;
                         try

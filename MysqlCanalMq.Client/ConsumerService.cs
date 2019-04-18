@@ -17,7 +17,7 @@ using MysqlCanalMq.Models;
 
 namespace MysqlCanalMq.Client
 {
-    public class ConsumerService : IHostedService
+    public class ConsumerService : IHostedService,IDisposable
     {
         private readonly ILogger _logger;
         private readonly RabitMqOption _rabitMqOption;
@@ -62,7 +62,7 @@ namespace MysqlCanalMq.Client
                
                 _manager.OnAction = OnActionOutput;
                 _manager.Start();
-
+                AppDomain.CurrentDomain.ProcessExit += CurrentDomainOnProcessExit;
                 _logger.LogInformation("rabit consume client start succ...");
             }
             catch (Exception ex)
@@ -72,17 +72,14 @@ namespace MysqlCanalMq.Client
             return Task.CompletedTask;
         }
 
+        private void CurrentDomainOnProcessExit(object sender, EventArgs e)
+        {
+            Dispose();
+        }
+
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            try
-            {
-                _manager.Stop();
-                _logger.LogInformation("rabit consume client stop succ...");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "rabit consume client stop error...");
-            }
+            Dispose();
             return Task.CompletedTask;
         }
 
@@ -126,6 +123,22 @@ namespace MysqlCanalMq.Client
                     _logger.LogWarning(message);
                     return;
                 }
+            }
+        }
+
+        private bool isDispose;
+        public void Dispose()
+        {
+            try
+            {
+                if (isDispose) return;
+                isDispose = true;
+                _manager.Stop();
+                _logger.LogInformation("rabit consume client stop succ...");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "rabit consume client stop error...");
             }
         }
     }
