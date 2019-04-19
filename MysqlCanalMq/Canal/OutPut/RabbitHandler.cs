@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MysqlCanalMq.Common.Interface;
@@ -19,14 +20,18 @@ namespace MysqlCanalMq.Canal.OutPut
         private readonly ILogger _logger;
         private readonly RabitMqOption _rabitMqOption;
         private readonly IProduce _produceRabbitMq;
-        public RabbitHandler(ILogger<RabbitHandler> logger, IOptions<RabitMqOption> rabbitMqOption)
+        private readonly IConfiguration _configuration;
+        public RabbitHandler(ILogger<RabbitHandler> logger, IOptions<RabitMqOption> rabbitMqOption, IConfiguration configuration)
         {
             _logger = logger;
+            _configuration = configuration;
             _rabitMqOption = rabbitMqOption.Value;
-            if (rabbitMqOption == null)
+            if (_rabitMqOption == null)
             {
-                throw new ArgumentNullException("Rabbit in appsettings.json is empty!");
+                _rabitMqOption = new RabitMqOption();
             }
+
+            UpdateFromEnv(_rabitMqOption);
 
             if (string.IsNullOrEmpty(_rabitMqOption.Host) || string.IsNullOrEmpty(_rabitMqOption.UserName) ||
                 string.IsNullOrEmpty(_rabitMqOption.Password) || _rabitMqOption.Port < 1)
@@ -82,6 +87,42 @@ namespace MysqlCanalMq.Canal.OutPut
         public void Dispose()
         {
             _produceRabbitMq.Dispose();
+        }
+
+
+        private void UpdateFromEnv(RabitMqOption _rab)
+        {
+            var host = _configuration["rabbit.address"];
+            if (!string.IsNullOrEmpty(host))
+            {
+                _rab.Host = host.Split(':')[0];
+                _rab.Port = int.Parse(host.Split(':')[1]);
+            }
+
+            var virtualHost = _configuration["rabbit.virtualHost"];
+            if (!string.IsNullOrEmpty(virtualHost))
+            {
+                _rab.VirtualHost = virtualHost;
+            }
+
+            var userName = _configuration["rabbit.userName"];
+            if (!string.IsNullOrEmpty(userName))
+            {
+                _rab.UserName = userName;
+            }
+
+            var password = _configuration["rabbit.password"];
+            if (!string.IsNullOrEmpty(password))
+            {
+                _rab.Password = password;
+            }
+
+            var dbTables = _configuration["rabbit.dbTables"];
+            if (!string.IsNullOrEmpty(dbTables))
+            {
+                _rab.DbTables = dbTables.Split(':').ToList();
+            }
+
         }
     }
 

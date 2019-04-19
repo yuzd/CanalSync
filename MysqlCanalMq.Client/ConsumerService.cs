@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using AntData.ORM.Data;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -21,16 +22,20 @@ namespace MysqlCanalMq.Client
         private readonly ILogger _logger;
         private readonly RabitMqOption _rabitMqOption;
         private MQServcieManager _manager;
+        private IConfiguration _configuration;
         private DbContext<DB> _dbContext;
-        public ConsumerService(ILogger<ConsumerService> logger, IOptions<RabitMqOption> rabitMqOption,DbContext<DB> dbContext)
+        public ConsumerService(ILogger<ConsumerService> logger, IOptions<RabitMqOption> rabitMqOption,DbContext<DB> dbContext, IConfiguration configuration)
         {
             _logger = logger;
+            _configuration = configuration;
             _dbContext = dbContext;
             _rabitMqOption = rabitMqOption.Value;
-            if (rabitMqOption == null)
+            if (_rabitMqOption == null)
             {
-                throw new ArgumentNullException("Rabit in appsettings.json is empty!");
+                _rabitMqOption = new RabitMqOption();
             }
+
+            UpdateFromEnv(_rabitMqOption);
 
             _rabitMqOption = rabitMqOption?.Value;
             if (string.IsNullOrEmpty(_rabitMqOption.Host) || string.IsNullOrEmpty(_rabitMqOption.UserName) ||
@@ -139,6 +144,46 @@ namespace MysqlCanalMq.Client
             {
                 _logger.LogError(ex, "rabit consume client stop error...");
             }
+        }
+
+        private void UpdateFromEnv(RabitMqOption _rab)
+        {
+            var host = _configuration["rabbit.address"];
+            if (!string.IsNullOrEmpty(host))
+            {
+                _rab.Host = host.Split(':')[0];
+                _rab.Port = int.Parse(host.Split(':')[1]);
+            }
+
+            var virtualHost = _configuration["rabbit.virtualHost"];
+            if (!string.IsNullOrEmpty(virtualHost))
+            {
+                _rab.VirtualHost = virtualHost;
+            }
+
+            var userName = _configuration["rabbit.userName"];
+            if (!string.IsNullOrEmpty(userName))
+            {
+                _rab.UserName = userName;
+            }
+
+            var password = _configuration["rabbit.password"];
+            if (!string.IsNullOrEmpty(password))
+            {
+                _rab.Password = password;
+            }
+            var destinations = _configuration["canal.destinations"];
+            if (!string.IsNullOrEmpty(destinations))
+            {
+                _rab.CanalDestinationName = destinations;
+            }
+            
+            var dbTables = _configuration["rabbit.dbTables"];
+            if (!string.IsNullOrEmpty(dbTables))
+            {
+                _rab.DbTables = dbTables.Split(':').ToList();
+            }
+
         }
     }
 

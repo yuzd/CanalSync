@@ -8,6 +8,7 @@ using CanalSharp.Client;
 using CanalSharp.Client.Impl;
 using Com.Alibaba.Otter.Canal.Protocol;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -28,14 +29,18 @@ namespace MysqlCanalMq.Canal
         private bool _isDispose = false;
         private readonly IServiceScope _scope;
         private readonly IMediator _mediator;
-        public CanalService(ILogger<CanalService> logger, IOptions<CanalOption> canalOption, IServiceScopeFactory scopeFactory)
+        private readonly IConfiguration _configuration;
+        public CanalService(ILogger<CanalService> logger, IOptions<CanalOption> canalOption, IServiceScopeFactory scopeFactory, IConfiguration configuration)
         {
             _logger = logger;
+            _configuration = configuration;
             _canalOption = canalOption?.Value;
             if (_canalOption == null)
             {
-                throw new ArgumentNullException("Canal in appsettings.json is empty!");
+                _canalOption = new CanalOption();
             }
+
+            UpdateFromEnv(_canalOption);
 
             if (string.IsNullOrEmpty(_canalOption.Host) || string.IsNullOrEmpty(_canalOption.Destination) ||
                 string.IsNullOrEmpty(_canalOption.MysqlName)
@@ -260,6 +265,57 @@ namespace MysqlCanalMq.Canal
             }
             return rt;
 
+        }
+
+        private void UpdateFromEnv(CanalOption _can)
+        {
+            var host = _configuration["canal.host"];
+            if (!string.IsNullOrEmpty(host))
+            {
+                _can.Host = host;
+            }
+
+            var port = _configuration["canal.port"];
+            if (!string.IsNullOrEmpty(port))
+            {
+                _can.Port = int.Parse(port);
+            }
+
+            var destinations = _configuration["canal.destinations"];
+            if (!string.IsNullOrEmpty(destinations))
+            {
+                _can.Destination = destinations;
+            }
+
+            var dbUsername = _configuration["canal.dbUsername"];
+            if (!string.IsNullOrEmpty(dbUsername))
+            {
+                _can.MysqlName = dbUsername;
+            }
+
+            var dbPassword = _configuration["canal.dbPassword"];
+            if (!string.IsNullOrEmpty(dbPassword))
+            {
+                _can.MysqlPwd = dbPassword;
+            }
+
+            var timer = _configuration["canal.timer"];
+            if (!string.IsNullOrEmpty(timer))
+            {
+                _can.Timer = int.Parse(timer);
+            }
+
+            var getCountsPerTimes = _configuration["canal.getCountsPerTimes"];
+            if (!string.IsNullOrEmpty(getCountsPerTimes))
+            {
+                _can.GetCountsPerTimes = int.Parse(getCountsPerTimes);
+            }
+
+            var outType = _configuration["canal.outType"];
+            if (!string.IsNullOrEmpty(outType))
+            {
+                _can.OutType = outType.Split(':').ToList();
+            }
         }
     }
 }

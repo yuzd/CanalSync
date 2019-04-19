@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using AntData.ORM.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,14 +15,25 @@ namespace MysqlCanalMq.Client
     {
         static void Main(string[] args)
         {
+
+
             NLog.LogManager.LoadConfiguration("nlog.config");
 
             var builderConfig = new ConfigurationBuilder()
-                .AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json")).Build();
+                .AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json"))
+                .AddEnvironmentVariables().Build();
 
             AntData.ORM.Common.Configuration.Linq.AllowMultipleQuery = true;
 
             AntData.ORM.Common.Configuration.UseDBConfig(builderConfig);
+
+            var connectionString = builderConfig["consume.db"];
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                var dbConnectionConfig = AntData.ORM.Common.Configuration.DBSettings.DatabaseSettings.First().ConnectionItemList.First();
+                dbConnectionConfig.ConnectionString = connectionString;
+                Console.WriteLine(connectionString);
+            }
 
             var builder = new HostBuilder()
                 .ConfigureServices((hostContext, services) =>
@@ -29,13 +41,14 @@ namespace MysqlCanalMq.Client
                     services.AddHostedService<ConsumerService>();
                     services.AddMysqlEntitys<DB>("to", ops =>
                     {
-                        ops.IsEnableLogTrace = true;
-                        ops.OnLogTrace= OnLogTrace;
+                        ops.IsEnableLogTrace = false;
+                        ops.OnLogTrace = OnLogTrace;
                     });
                     services.AddLogging(config => config.AddNLog());
 
                     services.Configure<RabitMqOption>(builderConfig.GetSection("Rabit"));
 
+                    services.AddSingleton<IConfiguration>(builderConfig);
                 });
 
             builder.Build().Run();

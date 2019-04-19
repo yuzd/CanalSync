@@ -46,6 +46,14 @@ namespace MysqlCanalMq
             var outPutList = Configuration.GetSection("Canal:OutType").Get<List<string>>();
             if (!outPutList.Any())
             {
+                var outType = Configuration["canal.outType"];
+                if (!string.IsNullOrEmpty(outType))
+                {
+                    outPutList = outType.Split(':').ToList();
+                }
+            }
+            if (!outPutList.Any())
+            {
                 throw new ArgumentNullException($"OutType in cannal setting can not be null or empty!");
             }
             services.Configure<CanalOption>(Configuration.GetSection("Canal"));
