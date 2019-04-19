@@ -35,6 +35,13 @@ namespace MysqlCanalMq.Canal.OutPut
 
         public Task Handle(CanalBody notification, CancellationToken cancellationToken)
         {
+            var message = notification.Message;
+            //过滤
+            if (_rabitMqOption.DbTables.Any() && !_rabitMqOption.DbTables.Contains(message.DbName + "." + message.TableName))
+            {
+                return Task.CompletedTask;
+            }
+
             var ploicy = Policy.Handle<Exception>()
                 .WaitAndRetry(new[]
                 {
@@ -48,7 +55,7 @@ namespace MysqlCanalMq.Canal.OutPut
             try
             {
                 var _produceRabbitMq = OutPutFactory.CreateRabitMqProduce(_rabitMqOption);
-                ploicy.Execute(() => _produceRabbitMq.Produce(notification.Message));
+                ploicy.Execute(() => _produceRabbitMq.Produce(message));
             }
             catch (Exception)
             {
