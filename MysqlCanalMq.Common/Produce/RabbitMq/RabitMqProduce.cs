@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Text;
 using MysqlCanalMq.Common.Interface;
 using MysqlCanalMq.Common.Models.canal;
@@ -9,10 +10,11 @@ namespace MysqlCanalMq.Common.Produce.RabbitMq
 {
     public class RabitMqProduce : IProduce
     {
-        private readonly ConnectionFactory _connectionFactory = null;
+        private readonly IConnection _connection = null;
+        private readonly ConcurrentDictionary<string, IModel> _channelDictionary = new ConcurrentDictionary<string, IModel>();
         public RabitMqProduce(RabitMqOption option)
         {
-            _connectionFactory = new ConnectionFactory
+            var connectionFactory = new ConnectionFactory
             {
                 HostName = option.Host,
                 Port = option.Port,
@@ -21,6 +23,7 @@ namespace MysqlCanalMq.Common.Produce.RabbitMq
                 AutomaticRecoveryEnabled = true,
                 VirtualHost = string.IsNullOrEmpty(option.VirtualHost) ? "/" : option.VirtualHost
             };
+            _connection = connectionFactory.CreateConnection();
         }
 
 
@@ -36,30 +39,37 @@ namespace MysqlCanalMq.Common.Produce.RabbitMq
                 topic += !string.IsNullOrEmpty(message.DbName) ? $"{message.DbName}." : "";
                 topic += message.TableName;
                 if (string.IsNullOrEmpty(topic)) throw new ArgumentNullException(nameof(topic));
-
-                using (IConnection connection = _connectionFactory.CreateConnection())
+                if (!_channelDictionary.TryGetValue(topic, out var channel))
                 {
-                    using (IModel channel = connection.CreateModel())
-                    {
-                        channel.ExchangeDeclare("canal", "direct", true, false, null);
-                        string messageString = JsonConvert.SerializeObject(message);
-                        byte[] body = Encoding.UTF8.GetBytes(messageString);
-                        var properties = channel.CreateBasicProperties();
-                        properties.Persistent = true; //使消息持久化
-                        channel.QueueDeclare(topic, true, false, false);
-                        channel.QueueBind(topic, "canal", topic);
-                        channel.ConfirmSelect();
-                        channel.BasicPublish("canal", topic, properties, body);
-                        bool success = channel.WaitForConfirms(new TimeSpan(0, 0, 60));
-                        if (!success)
-                        {
-                            throw new Exception("WaitForConfirms fail");
-                        }
-                    }
+                    channel = _connection.CreateModel();
+                    channel.ExchangeDeclare("canal", "direct", true, false, null);
+                    channel.QueueDeclare(topic, true, false, false);
+                    channel.QueueBind(topic, "canal", topic);
+                    _channelDictionary.TryAdd(topic, channel);
+                }
+
+                string messageString = JsonConvert.SerializeObject(message);
+                byte[] body = Encoding.UTF8.GetBytes(messageString);
+                var properties = channel.CreateBasicProperties();
+                properties.Persistent = true; //使消息持久化
+              
+                channel.ConfirmSelect();
+                channel.BasicPublish("canal", topic, properties, body);
+                bool success = channel.WaitForConfirms(new TimeSpan(0, 0, 60));
+                if (!success)
+                {
+                    throw new Exception("WaitForConfirms fail");
                 }
             }
         }
 
-
+        public void Dispose()
+        {
+            _connection?.Dispose();
+            foreach (var channel in _channelDictionary)
+            {
+                channel.Value?.Dispose();
+            }
+        }
     }
 }

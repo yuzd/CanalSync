@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using MysqlCanalMq.Canal;
 using MysqlCanalMq.Canal.OutPut;
@@ -60,8 +61,13 @@ namespace MysqlCanalMq
                 }
             }
             services.AddHostedService<CanalService>();
-         
-            services.AddMediatR(typeof(Startup).GetTypeInfo().Assembly);
+
+           
+
+            services.AddMediatR();
+
+            //处理类改成单例模式
+            services.Replace(new ServiceDescriptor(typeof(INotificationHandler<CanalBody>),typeof(RabbitHandler),ServiceLifetime.Singleton));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

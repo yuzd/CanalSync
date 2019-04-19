@@ -8,5 +8,6 @@ namespace MysqlCanalMq.Common.Interface
     public interface IProduce
     {
         void Produce(DataChange message);
+        void Dispose();
     }
 }

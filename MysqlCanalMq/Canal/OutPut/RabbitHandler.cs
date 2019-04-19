@@ -7,16 +7,18 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MysqlCanalMq.Common.Interface;
 using MysqlCanalMq.Common.Produce.RabbitMq;
 using MysqlCanalMq.Models;
 using Polly;
 
 namespace MysqlCanalMq.Canal.OutPut
 {
-    public class RabbitHandler : INotificationHandler<CanalBody>
+    public class RabbitHandler : INotificationHandler<CanalBody>,IDisposable
     {
         private readonly ILogger _logger;
         private readonly RabitMqOption _rabitMqOption;
+        private readonly IProduce _produceRabbitMq;
         public RabbitHandler(ILogger<RabbitHandler> logger, IOptions<RabitMqOption> rabbitMqOption)
         {
             _logger = logger;
@@ -30,6 +32,18 @@ namespace MysqlCanalMq.Canal.OutPut
                 string.IsNullOrEmpty(_rabitMqOption.Password) || _rabitMqOption.Port < 1)
             {
                 throw new ArgumentNullException("Rabbit param in appsettings.json is not correct!");
+            }
+
+            try
+            {
+
+                _produceRabbitMq = OutPutFactory.CreateRabitMqProduce(_rabitMqOption);
+                _logger.LogInformation("rabbit produce client start success!");
+            }
+            catch (Exception e)
+            {
+                logger.LogInformation(e,"rabbit produce client start err!");
+                throw;
             }
         }
 
@@ -54,7 +68,7 @@ namespace MysqlCanalMq.Canal.OutPut
                 });
             try
             {
-                var _produceRabbitMq = OutPutFactory.CreateRabitMqProduce(_rabitMqOption);
+                
                 ploicy.Execute(() => _produceRabbitMq.Produce(message));
             }
             catch (Exception)
@@ -65,6 +79,10 @@ namespace MysqlCanalMq.Canal.OutPut
             return Task.CompletedTask;
         }
 
+        public void Dispose()
+        {
+            _produceRabbitMq.Dispose();
+        }
     }
 
 
