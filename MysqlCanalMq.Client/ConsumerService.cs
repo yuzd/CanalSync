@@ -6,16 +6,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using AntData.ORM.Data;
-using DbModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MysqlCanalMq.Common.Consume;
 using MysqlCanalMq.Common.Consume.RabbitMq;
-using MysqlCanalMq.Common.Produce;
+using MysqlCanalMq.Common.Models;
 using MysqlCanalMq.Common.Produce.RabbitMq;
-using MysqlCanalMq.Models;
 
 namespace MysqlCanalMq.Client
 {
@@ -42,9 +39,9 @@ namespace MysqlCanalMq.Client
                 throw new ArgumentNullException("Rabit param in appsettings.json is not correct!");
             }
 
-            if (!ConsumeExtention.ConsumerTypeList.Any())
+            if (!_rabitMqOption.DbTables.Any())
             {
-                throw new ArgumentNullException("no consumer exist!");
+                throw new ArgumentNullException("no dbTables exist in appsettings.json !");
             }
         }
 
@@ -54,9 +51,9 @@ namespace MysqlCanalMq.Client
             {
                 _manager = new MQServcieManager();
 
-                foreach (var dbMapping in ConsumeExtention.ConsumerTypeList)
+                foreach (var dbMapping in _rabitMqOption.DbTables)
                 {
-                    _manager.AddService(new ConsumeService(_rabitMqOption, dbMapping.Key, _dbContext)
+                    _manager.AddService(new ConsumeService(_rabitMqOption, dbMapping, _dbContext)
                     {
                         OnAction = OnActionOutput
                     });
@@ -145,25 +142,4 @@ namespace MysqlCanalMq.Client
         }
     }
 
-    public static class ConsumeExtention
-    {
-        public static ConcurrentDictionary<Type,bool> ConsumerTypeList = new ConcurrentDictionary<Type, bool>();
-
-        public static IServiceCollection AddConsumer<T>(
-            this IServiceCollection serviceCollection)
-            where T : CanalMqBasic
-        {
-            if (serviceCollection == null)
-                throw new ArgumentException("serviceCollection is null");
-
-            if(ConsumerTypeList.TryGetValue(typeof(T),out var _))
-            {
-                return serviceCollection;
-            }
-
-            ConsumerTypeList.TryAdd(typeof(T), true);
-
-            return serviceCollection;
-        }
-    }
 }

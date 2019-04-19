@@ -1,19 +1,14 @@
 ﻿using System;
 using System.IO;
 using AntData.ORM.Data;
-using DbModels;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MysqlCanalMq.Client;
-using MysqlCanalMq.Common.Produce;
+using MysqlCanalMq.Common.Models;
 using MysqlCanalMq.Common.Produce.RabbitMq;
-using MysqlCanalMq.Db;
-using NLog;
-using NLog.Config;
 using NLog.Extensions.Logging;
 
-namespace MqClient
+namespace MysqlCanalMq.Client
 {
     class Program
     {
@@ -28,8 +23,6 @@ namespace MqClient
 
             AntData.ORM.Common.Configuration.UseDBConfig(builderConfig);
 
-            MysqlCanalMqDbInfo.UseDb<DB>();
-
             var builder = new HostBuilder()
                 .ConfigureServices((hostContext, services) =>
                 {
@@ -43,7 +36,6 @@ namespace MqClient
 
                     services.Configure<RabitMqOption>(builderConfig.GetSection("Rabit"));
 
-                    services.AddConsumer<Person>();
                 });
 
             builder.Build().Run();

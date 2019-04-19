@@ -23,7 +23,7 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
         private void OnInterval(object sender)
         {
             int error = 0, reconnect = 0;
-            OnAction?.Invoke(MessageLevel.Information, $"{DateTime.Now} 正在执行自检", null);
+            OnAction?.Invoke(MessageLevel.Debug, $"{DateTime.Now} 正在执行自检", null);
             foreach (var item in this.Services)
             {
                 for (int i = 0; i < item.Channels.Count; i++)
@@ -50,7 +50,12 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
                     }
                 }
             }
-            OnAction?.Invoke(MessageLevel.Information, $"{DateTime.Now} 自检完成，错误数：{error}，重连成功数：{reconnect}", null);
+
+            if (error>0||reconnect>0)
+            {
+                OnAction?.Invoke(MessageLevel.Information, $"{DateTime.Now} 自检完成，错误数：{error}，重连成功数：{reconnect}", null);
+            }
+           
         }
 
         public void Start()

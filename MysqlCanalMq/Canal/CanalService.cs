@@ -51,7 +51,6 @@ namespace MysqlCanalMq.Canal
         {
             try
             {
-                _logger.LogInformation("rabbit client start success...");
                 _canalConnector = CanalConnectors.NewSingleConnector(_canalOption.Host, _canalOption.Port, _canalOption.Destination, _canalOption.MysqlName, _canalOption.MysqlPwd);
                 _canalConnector.Connect();
                 _canalConnector.Subscribe(".*\\..*");
@@ -237,8 +236,8 @@ namespace MysqlCanalMq.Canal
 
             _canalConnector.Ack(batchId);
             stopwatch.Stop();
-            var doutime = stopwatch.Elapsed.TotalSeconds;
-            _logger.LogInformation($"batchId:{batchId},count:{count},time:{(doutime > 300 ? stopwatch.Elapsed.TotalMinutes + "分" : doutime + "秒")} send to mq success");
+            var doutime = (int)stopwatch.Elapsed.TotalSeconds;
+            _logger.LogInformation($"batchId:{batchId},count:{count},time:{(doutime > 300 ? ((int)stopwatch.Elapsed.TotalMinutes) + "分" : doutime + "秒")} send to mq success");
         }
 
         private List<ColumnData> DoConvertDataColumn(List<Column> columns)
