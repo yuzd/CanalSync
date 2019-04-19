@@ -12,7 +12,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MysqlCanalMq.Common.Consume;
-using MysqlCanalMq.Common.RabitMQ;
+using MysqlCanalMq.Common.Consume.RabbitMq;
+using MysqlCanalMq.Common.Produce;
+using MysqlCanalMq.Common.Produce.RabbitMq;
 using MysqlCanalMq.Models;
 
 namespace MysqlCanalMq.Client

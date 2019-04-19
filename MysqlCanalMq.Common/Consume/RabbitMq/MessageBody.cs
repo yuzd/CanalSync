@@ -1,10 +1,7 @@
-﻿using RabbitMQ.Client.Events;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System;
+using RabbitMQ.Client.Events;
 
-namespace MysqlCanalMq.Common.Consume
+namespace MysqlCanalMq.Common.Consume.RabbitMq
 {
     public class MessageBody
     {

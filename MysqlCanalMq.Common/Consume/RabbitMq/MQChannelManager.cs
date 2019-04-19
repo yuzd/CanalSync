@@ -1,10 +1,8 @@
-﻿using RabbitMQ.Client;
+﻿using System.Collections.Generic;
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace MysqlCanalMq.Common.Consume
+namespace MysqlCanalMq.Common.Consume.RabbitMq
 {
     public class MQChannelManager
     {

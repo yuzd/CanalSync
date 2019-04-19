@@ -1,7 +1,6 @@
-
 using System.Collections.Generic;
 
-namespace MysqlCanalMq.Models.canal
+namespace MysqlCanalMq.Common.Models.canal
 {
     public class DataChange
     {
@@ -10,6 +9,7 @@ namespace MysqlCanalMq.Models.canal
         public string TableName { get; set; }
 
         public string EventType { get; set; }
+        public string CanalDestination { get; set; }
 
         public IList<ColumnData> BeforeColumnList { get; set; }
 

@@ -1,13 +1,9 @@
-﻿using RabbitMQ.Client;
+﻿using System;
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Framing;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace MysqlCanalMq.Common.Consume
+namespace MysqlCanalMq.Common.Consume.RabbitMq
 {
     public class MQChannel
     {

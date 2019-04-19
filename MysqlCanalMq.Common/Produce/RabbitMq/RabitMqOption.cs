@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
-namespace MysqlCanalMq.Common.RabitMQ
+namespace MysqlCanalMq.Common.Produce.RabbitMq
 {
     public class RabitMqOption
     {
@@ -14,11 +12,12 @@ namespace MysqlCanalMq.Common.RabitMQ
         public string UserName { get; set; }
         public string Password { get; set; }
 
-        public int WaitTimeWhenError { get; set; }
 
-        public bool PublisherStopWhenError { get; set; }
 
         public string CanalDestinationName { get; set; }
+
+
+        public List<string> DbTables { get; set; }
     }
 
 }

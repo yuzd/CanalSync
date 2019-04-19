@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MysqlCanalMq.Common.Consume
+﻿namespace MysqlCanalMq.Common.Consume.RabbitMq
 {
     public enum MessageLevel
     {

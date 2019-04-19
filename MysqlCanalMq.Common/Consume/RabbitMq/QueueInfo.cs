@@ -1,7 +1,6 @@
-﻿using RabbitMQ.Client.Events;
-using System;
+﻿using System;
 
-namespace MysqlCanalMq.Common.Consume
+namespace MysqlCanalMq.Common.Consume.RabbitMq
 {
     public partial class QueueInfo
     {

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Reflection;
 using CanalSharp.Common.Logging;
-using DbModels;
+using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -12,8 +12,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MysqlCanalMq.Canal;
-using MysqlCanalMq.Common.RabitMQ;
-using MysqlCanalMq.Db;
+using MysqlCanalMq.Canal.OutPut;
+using MysqlCanalMq.Common.Produce;
+using MysqlCanalMq.Common.Produce.RabbitMq;
 using MysqlCanalMq.Models;
 using NLog.Extensions.Logging;
 
@@ -38,20 +39,29 @@ namespace MysqlCanalMq
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddHostedService<CanalService>();
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
+            var outPutList = Configuration.GetSection("Canal:OutType").Get<List<string>>();
+            if (!outPutList.Any())
+            {
+                throw new ArgumentNullException($"OutType in cannal setting can not be null or empty!");
+            }
             services.Configure<CanalOption>(Configuration.GetSection("Canal"));
-            services.Configure<RabitMqOption>(Configuration.GetSection("Rabit"));
-
-            //#region AntORM
-            //services.AddMysqlEntitys<DB>("from", ops =>
-            //{
-            //    ops.IsEnableLogTrace = false;
-            //});
-            //MysqlCanalMqDbInfo.UseDb<DB>();
-            //#endregion
+            foreach (var outType in outPutList)
+            {
+                switch (outType.ToLower())
+                {
+                    case "rabbit":
+                        services.Configure<RabitMqOption>(Configuration.GetSection("Rabbit"));
+                        break;
+                    default:
+                        throw new NotSupportedException($"OutPutType:{outType} is not supported yet!");
+                }
+            }
+            services.AddHostedService<CanalService>();
+         
+            services.AddMediatR(typeof(Startup).GetTypeInfo().Assembly);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -81,11 +91,6 @@ namespace MysqlCanalMq
             logging.AddNLog();
             #endregion
 
-            //#region AntORM
-
-            //AntData.ORM.Common.Configuration.UseDBConfig(Configuration);
-
-            //#endregion
             //设置 NLog
             CanalSharpLogManager.LoggerFactory.AddNLog();
 

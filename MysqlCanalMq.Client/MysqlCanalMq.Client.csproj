@@ -31,7 +31,6 @@
   <ItemGroup>
     <ProjectReference Include="..\MysqlCanalMq.Common\MysqlCanalMq.Common.csproj" />
     <ProjectReference Include="..\MysqlCanalMq.Db\MysqlCanalMq.Db.csproj" />
-    <ProjectReference Include="..\MysqlCanalMq.Models\MysqlCanalMq.Models.csproj" />
   </ItemGroup>
 
   <ItemGroup>

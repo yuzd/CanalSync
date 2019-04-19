@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MysqlCanalMq.Db\MysqlCanalMq.Db.csproj" />
-    <ProjectReference Include="..\MysqlCanalMq.Models\MysqlCanalMq.Models.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,21 +1,19 @@
-﻿using RabbitMQ.Client;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using AntData.ORM;
 using AntData.ORM.Data;
 using AntData.ORM.Mapping;
-
 using DbModels;
-using MysqlCanalMq.Common.RabitMQ;
+using MysqlCanalMq.Common.Models.canal;
+using MysqlCanalMq.Common.Produce.RabbitMq;
+using MysqlCanalMq.Common.Reflection;
 using MysqlCanalMq.Common.StaticExt;
 using MysqlCanalMq.Db;
 using MysqlCanalMq.Models;
-using MysqlCanalMq.Models.canal;
-using MysqlCanalMq.Common.Reflection;
+using RabbitMQ.Client;
 
-namespace MysqlCanalMq.Common.Consume
+namespace MysqlCanalMq.Common.Consume.RabbitMq
 {
     public class ConsumeService : MQServiceBase
     {
