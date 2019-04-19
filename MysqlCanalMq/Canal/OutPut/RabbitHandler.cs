@@ -122,6 +122,12 @@ namespace MysqlCanalMq.Canal.OutPut
             {
                 _rab.DbTables = dbTables.Split(':').ToList();
             }
+            
+            var confirmSelect = _configuration["canal.confirmSelect"];
+            if (!string.IsNullOrEmpty(confirmSelect))
+            {
+                _rab.ConfirmSelect = confirmSelect.Equals("true") || confirmSelect.Equals("1");
+            }
 
         }
     }

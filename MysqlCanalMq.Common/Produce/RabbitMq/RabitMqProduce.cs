@@ -10,10 +10,12 @@ namespace MysqlCanalMq.Common.Produce.RabbitMq
 {
     public class RabitMqProduce : IProduce
     {
+        private readonly RabitMqOption _rabitMqOption;
         private readonly IConnection _connection = null;
         private readonly ConcurrentDictionary<string, IModel> _channelDictionary = new ConcurrentDictionary<string, IModel>();
         public RabitMqProduce(RabitMqOption option)
         {
+            _rabitMqOption = option;
             var connectionFactory = new ConnectionFactory
             {
                 HostName = option.Host,
@@ -45,6 +47,10 @@ namespace MysqlCanalMq.Common.Produce.RabbitMq
                     channel.ExchangeDeclare("canal", "direct", true, false, null);
                     channel.QueueDeclare(topic, true, false, false);
                     channel.QueueBind(topic, "canal", topic);
+                    if (_rabitMqOption.ConfirmSelect)
+                    {
+                        channel.ConfirmSelect();
+                    }
                     _channelDictionary.TryAdd(topic, channel);
                 }
 
@@ -52,8 +58,6 @@ namespace MysqlCanalMq.Common.Produce.RabbitMq
                 byte[] body = Encoding.UTF8.GetBytes(messageString);
                 var properties = channel.CreateBasicProperties();
                 properties.Persistent = true; //使消息持久化
-              
-                channel.ConfirmSelect();
                 channel.BasicPublish("canal", topic, properties, body);
                 bool success = channel.WaitForConfirms(new TimeSpan(0, 0, 60));
                 if (!success)
