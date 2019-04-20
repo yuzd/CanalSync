@@ -59,10 +59,9 @@ namespace MysqlCanalMq.Common.Produce.RabbitMq
                 var properties = channel.CreateBasicProperties();
                 properties.Persistent = true; //使消息持久化
                 channel.BasicPublish("canal", topic, properties, body);
-                bool success = channel.WaitForConfirms(new TimeSpan(0, 0, 60));
-                if (!success)
+                if (_rabitMqOption.ConfirmSelect)
                 {
-                    throw new Exception("WaitForConfirms fail");
+                    channel.WaitForConfirmsOrDie();
                 }
             }
         }
