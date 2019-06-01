@@ -7,13 +7,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using AntData.ORM.Data;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MysqlCanalMq.Common.Consume.RabbitMq;
 using MysqlCanalMq.Common.Models;
 using MysqlCanalMq.Common.Produce.RabbitMq;
+using MysqlCanalMq.Common.SqlParse;
 
 namespace MysqlCanalMq.Client
 {
@@ -23,11 +23,13 @@ namespace MysqlCanalMq.Client
         private readonly RabitMqOption _rabitMqOption;
         private MQServcieManager _manager;
         private IConfiguration _configuration;
+        private IDbTypeMapper _dbTypeMapper;
         private DbContext<DB> _dbContext;
-        public ConsumerService(ILogger<ConsumerService> logger, IOptions<RabitMqOption> rabitMqOption,DbContext<DB> dbContext, IConfiguration configuration)
+        public ConsumerService(ILogger<ConsumerService> logger, IOptions<RabitMqOption> rabitMqOption,DbContext<DB> dbContext, IConfiguration configuration, IDbTypeMapper dbTypeMapper)
         {
             _logger = logger;
             _configuration = configuration;
+            _dbTypeMapper = dbTypeMapper;
             _dbContext = dbContext;
             _rabitMqOption = rabitMqOption.Value;
             if (_rabitMqOption == null)
@@ -58,7 +60,7 @@ namespace MysqlCanalMq.Client
 
                 foreach (var dbMapping in _rabitMqOption.DbTables)
                 {
-                    _manager.AddService(new ConsumeService(_rabitMqOption, dbMapping, _dbContext)
+                    _manager.AddService(new ConsumeService(_rabitMqOption, dbMapping, _dbContext, _dbTypeMapper)
                     {
                         OnAction = OnActionOutput
                     });

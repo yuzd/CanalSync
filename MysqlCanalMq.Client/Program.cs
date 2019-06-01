@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MysqlCanalMq.Common.Models;
 using MysqlCanalMq.Common.Produce.RabbitMq;
+using MysqlCanalMq.Common.SqlParse;
 using NLog.Extensions.Logging;
 
 namespace MysqlCanalMq.Client
@@ -44,11 +45,14 @@ namespace MysqlCanalMq.Client
                         ops.IsEnableLogTrace = false;
                         ops.OnLogTrace = OnLogTrace;
                     });
+
                     services.AddLogging(config => config.AddNLog());
 
                     services.Configure<RabitMqOption>(builderConfig.GetSection("Rabit"));
 
                     services.AddSingleton<IConfiguration>(builderConfig);
+
+                    services.AddSingleton<IDbTypeMapper>(new MysqlDbTypeMapper());
                 });
 
             builder.Build().Run();

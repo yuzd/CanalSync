@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using AntData.ORM;
 using AntData.ORM.Data;
-using AntData.ORM.Mapping;
 using MysqlCanalMq.Common.Models;
 using MysqlCanalMq.Common.Models.canal;
 using MysqlCanalMq.Common.Produce.RabbitMq;
-using MysqlCanalMq.Common.Reflection;
 using MysqlCanalMq.Common.SqlParse;
 using MysqlCanalMq.Common.StaticExt;
 using RabbitMQ.Client;
@@ -18,9 +14,11 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
     {
         public Action<MessageLevel, string, Exception> OnAction = null;
         private readonly DbContext<DB> _dbContext;
-        public ConsumeService(RabitMqOption config, string dbtable, DbContext<DB> dbContext) : base(config)
+        private readonly IDbTypeMapper _dbTypeMapper;
+        public ConsumeService(RabitMqOption config, string dbtable, DbContext<DB> dbContext, IDbTypeMapper dbTypeMapper) : base(config)
         {
             _dbContext = dbContext;
+            _dbTypeMapper = dbTypeMapper;
             var queueName = !string.IsNullOrEmpty(config.CanalDestinationName) ? $"{config.CanalDestinationName}." : "";
             queueName += dbtable;
             base.Queues.Add(new QueueInfo()
@@ -42,9 +40,11 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
         /// <param name="message"></param>
         public override void OnReceived(MessageBody message)
         {
+            //如果不返回ACK 则 RabbitMQ 不会再发送数据
+            message.Consumer.Model.BasicAck(message.BasicDeliver.DeliveryTag, true);
+
             if (string.IsNullOrEmpty(message.Content))
             {
-                message.Consumer.Model.BasicAck(message.BasicDeliver.DeliveryTag, true);
                 return;
             }
 
@@ -69,7 +69,6 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
                 {
                     //没有主键
                     OnAction?.Invoke(MessageLevel.Error, $"revice data without primaryKey", new Exception(message.Content));
-                    message.Consumer.Model.BasicAck(message.BasicDeliver.DeliveryTag, true);
                     return;
                 }
 
@@ -82,11 +81,10 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
                 {
                     if (isExist)
                     {
-                        message.Consumer.Model.BasicAck(message.BasicDeliver.DeliveryTag, true);
                         return;
                     }
 
-                    var insertSql = DbTypeMapper.GetInsertSql(data.TableName, cloumns);
+                    var insertSql = _dbTypeMapper.GetInsertSql(data.TableName, cloumns);
                     var insertR = _dbContext.Execute(insertSql.Item1, insertSql.Item2.ToArray()) > 0;
 
                     if (!insertR)
@@ -99,11 +97,10 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
                 {
                     if (!isExist)
                     {
-                        message.Consumer.Model.BasicAck(message.BasicDeliver.DeliveryTag, true);
                         return;
                     }
 
-                    var deleteSql = DbTypeMapper.GetDeleteSql(data.TableName, cloumns);
+                    var deleteSql = _dbTypeMapper.GetDeleteSql(data.TableName, cloumns);
                     var deleteR = _dbContext.Execute(deleteSql.Item1, deleteSql.Item2.ToArray()) > 0;
                     if (!deleteR)
                     {
@@ -115,7 +112,7 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
                 {
                     if (!isExist)
                     {
-                        var insertSql = DbTypeMapper.GetInsertSql(data.TableName, cloumns);
+                        var insertSql = _dbTypeMapper.GetInsertSql(data.TableName, cloumns);
                         var insertR = _dbContext.Execute(insertSql.Item1, insertSql.Item2.ToArray()) > 0;
                         if (!insertR)
                         {
@@ -125,7 +122,7 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
                     }
                     else
                     {
-                        var updateSql = DbTypeMapper.GetUpdateSql(data.TableName, cloumns);
+                        var updateSql = _dbTypeMapper.GetUpdateSql(data.TableName, cloumns);
                         var updateR = _dbContext.Execute(updateSql.Item1, updateSql.Item2.ToArray()) > 0;
                         if (!updateR)
                         {
@@ -136,7 +133,6 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
 
                 }
 
-                message.Consumer.Model.BasicAck(message.BasicDeliver.DeliveryTag, true);
             }
             catch (Exception ex)
             {
