@@ -60,26 +60,29 @@ namespace Canal.Server
         /// 注册消费组件 单例模式
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        public void RegisterSingleton<T>() where T : INotificationHandler<CanalBody>
+        public CanalConsumeRegister RegisterSingleton<T>() where T : INotificationHandler<CanalBody>
         {
             var type = typeof(T);
             if (!SingletonConsumeList.Contains(type))
             {
                 SingletonConsumeList.Add(type);
             }
+            return this;
         }
 
         /// <summary>
         /// 注册消费主键 多例模式
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        public void Register<T>() where T : INotificationHandler<CanalBody>
+        public CanalConsumeRegister Register<T>() where T : INotificationHandler<CanalBody>
         {
             var type = typeof(T);
             if (!ConsumeList.Contains(type))
             {
                 ConsumeList.Add(type);
             }
+
+            return this;
         }
 
     }
