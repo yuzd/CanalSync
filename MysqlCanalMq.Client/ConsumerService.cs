@@ -12,8 +12,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MysqlCanalMq.Common.Consume.RabbitMq;
 using MysqlCanalMq.Common.Models;
-using MysqlCanalMq.Common.Produce.RabbitMq;
 using MysqlCanalMq.Common.SqlParse;
+using MysqlCanalMq.Server.RabbitMq;
 
 namespace MysqlCanalMq.Client
 {

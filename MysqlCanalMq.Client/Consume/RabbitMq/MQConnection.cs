@@ -1,5 +1,5 @@
 ﻿using System.Text;
-using MysqlCanalMq.Common.Produce.RabbitMq;
+using MysqlCanalMq.Server.RabbitMq;
 using RabbitMQ.Client;
 
 namespace MysqlCanalMq.Common.Consume.RabbitMq

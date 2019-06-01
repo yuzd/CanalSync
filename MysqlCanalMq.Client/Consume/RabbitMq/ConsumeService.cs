@@ -3,9 +3,9 @@ using System.Linq;
 using AntData.ORM.Data;
 using MysqlCanalMq.Common.Models;
 using MysqlCanalMq.Common.Models.canal;
-using MysqlCanalMq.Common.Produce.RabbitMq;
 using MysqlCanalMq.Common.SqlParse;
 using MysqlCanalMq.Common.StaticExt;
+using MysqlCanalMq.Server.RabbitMq;
 using RabbitMQ.Client;
 
 namespace MysqlCanalMq.Common.Consume.RabbitMq

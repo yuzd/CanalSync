@@ -6,8 +6,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MysqlCanalMq.Common.Models;
-using MysqlCanalMq.Common.Produce.RabbitMq;
 using MysqlCanalMq.Common.SqlParse;
+using MysqlCanalMq.Server.RabbitMq;
 using NLog.Extensions.Logging;
 
 namespace MysqlCanalMq.Client

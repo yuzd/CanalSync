@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MysqlCanalMq.Common.Produce.RabbitMq
+namespace MysqlCanalMq.Server.RabbitMq
 {
     public class RabitMqOption
     {
@@ -37,11 +37,6 @@ namespace MysqlCanalMq.Common.Produce.RabbitMq
         public string CanalDestinationName { get; set; }
 
 
-        /// <summary>
-        /// 发送消息是否开启confirmselect模式
-        /// </summary>
-        public bool ConfirmSelect { get; set; }
-        
         /// <summary>
         /// 指定要监听的db和表配置的
         /// 例如 test.person代表db名称为test 表名称为person

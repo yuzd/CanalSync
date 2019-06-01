@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Canal.Server.Models;
 using CanalSharp.Client;
 using CanalSharp.Client.Impl;
 using Com.Alibaba.Otter.Canal.Protocol;
@@ -13,13 +14,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MysqlCanalMq.Common.Models.canal;
-using MysqlCanalMq.Server.Models;
 using Newtonsoft.Json;
 
-namespace MysqlCanalMq.Server.Canal
+namespace Canal.Server
 {
-    public class CanalService : IHostedService, IDisposable
+    internal class CanalService : IHostedService, IDisposable
     {
         private readonly ILogger _logger;
         private readonly CanalOption _canalOption;
@@ -310,11 +309,6 @@ namespace MysqlCanalMq.Server.Canal
                 _can.GetCountsPerTimes = int.Parse(getCountsPerTimes);
             }
 
-            var outType = _configuration["canal.outType"];
-            if (!string.IsNullOrEmpty(outType))
-            {
-                _can.OutType = outType.Split(':').ToList();
-            }
         }
     }
 }

@@ -7,7 +7,7 @@
 // <summary></summary>
 //-----------------------------------------------------------------------
 
-namespace MysqlCanalMq.Server.Models
+namespace Canal.Server.Models
 {
     using System;
     using System.Collections.Generic;
@@ -26,7 +26,6 @@ namespace MysqlCanalMq.Server.Models
         public string MysqlPwd { get; set; }
         public int Timer { get; set; }
         public int GetCountsPerTimes { get; set; }
-        public List<string> OutType { get; set; }
 
     }
 }

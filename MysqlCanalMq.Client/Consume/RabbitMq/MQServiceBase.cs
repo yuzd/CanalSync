@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using MysqlCanalMq.Common.Produce.RabbitMq;
+using MysqlCanalMq.Server.RabbitMq;
 
 namespace MysqlCanalMq.Common.Consume.RabbitMq
 {

@@ -5,15 +5,15 @@ VisualStudioVersion = 15.0.28307.421
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MysqlCanalMq.Client", "MysqlCanalMq.Client\MysqlCanalMq.Client.csproj", "{DCA82B1D-231F-4608-A944-5B57B961E299}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MysqlCanalMq.Common", "MysqlCanalMq.Common\MysqlCanalMq.Common.csproj", "{27176F67-F4F0-4CF0-B07F-683B8C1152C4}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{95F51309-05E8-4168-9337-23A5B5D3C22C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{8E7AAEDB-3978-4CCB-B51C-E8994BC7FB8D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTest", "UnitTest\UnitTest.csproj", "{C5989F24-7D73-4015-9C21-C1AC5D0FC3EA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MysqlCanalMq.Server", "MysqlCanalMq.Server\MysqlCanalMq.Server\MysqlCanalMq.Server.csproj", "{8872847E-6D86-456D-8AD0-A50FD42B7D7F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MysqlCanalMq.Server", "MysqlCanalMq.Server\MysqlCanalMq.Server\MysqlCanalMq.Server.csproj", "{8872847E-6D86-456D-8AD0-A50FD42B7D7F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Canal.Server", "Canal.Server\Canal.Server.csproj", "{DB7745E9-C8E8-435C-96D6-40885FB41534}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,10 +25,6 @@ Global
 		{DCA82B1D-231F-4608-A944-5B57B961E299}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DCA82B1D-231F-4608-A944-5B57B961E299}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DCA82B1D-231F-4608-A944-5B57B961E299}.Release|Any CPU.Build.0 = Release|Any CPU
-		{27176F67-F4F0-4CF0-B07F-683B8C1152C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{27176F67-F4F0-4CF0-B07F-683B8C1152C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{27176F67-F4F0-4CF0-B07F-683B8C1152C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{27176F67-F4F0-4CF0-B07F-683B8C1152C4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C5989F24-7D73-4015-9C21-C1AC5D0FC3EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C5989F24-7D73-4015-9C21-C1AC5D0FC3EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C5989F24-7D73-4015-9C21-C1AC5D0FC3EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -37,15 +33,19 @@ Global
 		{8872847E-6D86-456D-8AD0-A50FD42B7D7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8872847E-6D86-456D-8AD0-A50FD42B7D7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8872847E-6D86-456D-8AD0-A50FD42B7D7F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB7745E9-C8E8-435C-96D6-40885FB41534}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB7745E9-C8E8-435C-96D6-40885FB41534}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB7745E9-C8E8-435C-96D6-40885FB41534}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB7745E9-C8E8-435C-96D6-40885FB41534}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{DCA82B1D-231F-4608-A944-5B57B961E299} = {95F51309-05E8-4168-9337-23A5B5D3C22C}
-		{27176F67-F4F0-4CF0-B07F-683B8C1152C4} = {95F51309-05E8-4168-9337-23A5B5D3C22C}
 		{C5989F24-7D73-4015-9C21-C1AC5D0FC3EA} = {8E7AAEDB-3978-4CCB-B51C-E8994BC7FB8D}
 		{8872847E-6D86-456D-8AD0-A50FD42B7D7F} = {95F51309-05E8-4168-9337-23A5B5D3C22C}
+		{DB7745E9-C8E8-435C-96D6-40885FB41534} = {95F51309-05E8-4168-9337-23A5B5D3C22C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {60095D5A-9360-4314-97D4-AF0903E71287}

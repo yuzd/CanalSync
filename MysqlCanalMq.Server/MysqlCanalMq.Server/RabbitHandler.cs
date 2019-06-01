@@ -4,28 +4,27 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Canal.Server.Models;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MysqlCanalMq.Common.Interface;
-using MysqlCanalMq.Common.Produce.RabbitMq;
-using MysqlCanalMq.Server.Models;
+using MysqlCanalMq.Server.RabbitMq;
 using Polly;
 
-namespace MysqlCanalMq.Server.Canal.OutPut
+namespace MysqlCanalMq.Server
 {
     public class RabbitHandler : INotificationHandler<CanalBody>,IDisposable
     {
         private readonly ILogger _logger;
         private readonly RabitMqOption _rabitMqOption;
-        private readonly IProduce _produceRabbitMq;
+        private readonly RabitMqProduce _produceRabbitMq;
         private readonly IConfiguration _configuration;
         public RabbitHandler(ILogger<RabbitHandler> logger, IOptions<RabitMqOption> rabbitMqOption, IConfiguration configuration)
         {
             _logger = logger;
             _configuration = configuration;
-            _rabitMqOption = rabbitMqOption.Value;
+            _rabitMqOption = rabbitMqOption?.Value;
             if (_rabitMqOption == null)
             {
                 _rabitMqOption = new RabitMqOption();
@@ -42,7 +41,7 @@ namespace MysqlCanalMq.Server.Canal.OutPut
             try
             {
 
-                _produceRabbitMq = OutPutFactory.CreateRabitMqProduce(_rabitMqOption);
+                _produceRabbitMq = new RabitMqProduce(_rabitMqOption);
                 _logger.LogInformation("rabbit produce client start success!");
             }
             catch (Exception e)
