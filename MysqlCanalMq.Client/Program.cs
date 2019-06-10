@@ -2,11 +2,11 @@
 using System.IO;
 using System.Linq;
 using AntData.ORM.Data;
+using Canal.SqlParse;
+using Canal.SqlParse.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MysqlCanalMq.Common.Models;
-using MysqlCanalMq.Common.SqlParse;
 using MysqlCanalMq.Server.RabbitMq;
 using NLog.Extensions.Logging;
 

@@ -1,8 +1,8 @@
 ﻿using AntData.ORM.Data;
-using MysqlCanalMq.Common.Models.canal;
 using System.Collections.Generic;
+using Canal.SqlParse.Models.canal;
 
-namespace MysqlCanalMq.Common.SqlParse
+namespace Canal.SqlParse
 {
     public interface IDbTypeMapper
     {

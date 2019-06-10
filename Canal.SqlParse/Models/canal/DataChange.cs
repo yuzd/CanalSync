@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace MysqlCanalMq.Common.Models.canal
+namespace Canal.SqlParse.Models.canal
 {
     public class DataChange
     {

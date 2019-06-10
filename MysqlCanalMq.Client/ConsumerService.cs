@@ -6,13 +6,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using AntData.ORM.Data;
+using Canal.SqlParse;
+using Canal.SqlParse.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MysqlCanalMq.Common.Consume.RabbitMq;
-using MysqlCanalMq.Common.Models;
-using MysqlCanalMq.Common.SqlParse;
 using MysqlCanalMq.Server.RabbitMq;
 
 namespace MysqlCanalMq.Client

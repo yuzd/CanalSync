@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using AntData.ORM.Data;
-using MysqlCanalMq.Common.Models.canal;
-using MysqlCanalMq.Common.StaticExt;
+using Canal.SqlParse.Models.canal;
 
-namespace MysqlCanalMq.Common.SqlParse
+namespace Canal.SqlParse
 {
     public class MysqlDbTypeMapper: IDbTypeMapper
     {
@@ -138,7 +137,7 @@ namespace MysqlCanalMq.Common.SqlParse
             }
             else
             {
-                param.Value = TypeConvertUtils.Parse(column.Value, targetType.Item1);
+                param.Value = Canal.SqlParse.StaticExt.TypeConvertUtils.Parse(column.Value, targetType.Item1);
             }
 
             return param;

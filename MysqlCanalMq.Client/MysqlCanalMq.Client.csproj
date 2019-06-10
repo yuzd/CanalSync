@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <None Remove="appsettings.json" />
+    <None Remove="Reflection\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,6 +37,18 @@
     <None Update="NLog.Config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Canal.SqlParse\Canal.SqlParse.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Reflection\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="Reflection\**" />
   </ItemGroup>
 
 </Project>

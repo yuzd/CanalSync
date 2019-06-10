@@ -1,4 +1,4 @@
-namespace MysqlCanalMq.Common.Models.canal
+namespace Canal.SqlParse.Models.canal
 {
     public class ColumnData
 	{

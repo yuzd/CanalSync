@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using AntData.ORM.Linq;
 
-namespace MysqlCanalMq.Common.Models
+namespace Canal.SqlParse.Models
 {
     public partial class DB : IEntity
     {
