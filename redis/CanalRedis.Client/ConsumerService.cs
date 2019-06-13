@@ -34,7 +34,7 @@ namespace CanalRedis.Client
             _configuration = configuration;
             _dbTypeMapper = dbTypeMapper;
             _dbContext = dbContext;
-            var redisOptions1 = redisOptions.Value;
+            var redisOptions1 = redisOptions?.Value;
             if (redisOptions1 == null)
             {
                 redisOptions1 = new RedisOption();
@@ -50,11 +50,6 @@ namespace CanalRedis.Client
             if (!redisOptions1.DbTables.Any())
             {
                 throw new ArgumentNullException(nameof(RedisOption.DbTables));
-            }
-
-            if (string.IsNullOrEmpty(redisOptions1.ConnectString))
-            {
-                throw new ArgumentNullException(nameof(RedisOption.ConnectString));
             }
 
 

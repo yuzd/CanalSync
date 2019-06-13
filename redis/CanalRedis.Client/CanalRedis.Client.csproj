@@ -7,15 +7,10 @@
 
   <ItemGroup>
     <None Remove="appsettings.json" />
-    <None Remove="NLog.Config" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="appsettings.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Include="NLog.Config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
@@ -37,5 +32,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Canal.SqlParse\Canal.SqlParse.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="NLog.Config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

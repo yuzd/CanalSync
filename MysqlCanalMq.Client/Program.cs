@@ -18,7 +18,7 @@ namespace MysqlCanalMq.Client
         {
 
 
-            NLog.LogManager.LoadConfiguration("nlog.config");
+            NLog.LogManager.LoadConfiguration("NLog.Config");
 
             var builderConfig = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json"))

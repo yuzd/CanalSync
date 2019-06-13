@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MysqlCanalMq.Server.RabbitMq;
+using NLog.Extensions.Logging;
 
 namespace MysqlCanalMq.Server
 {
@@ -14,7 +15,7 @@ namespace MysqlCanalMq.Server
     {
         static void Main(string[] args)
         {
-            NLog.LogManager.LoadConfiguration("nlog.config");
+            NLog.LogManager.LoadConfiguration("NLog.Config");
 
             var Configuration = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json"))
@@ -24,6 +25,8 @@ namespace MysqlCanalMq.Server
             var builder = new HostBuilder()
                 .ConfigureServices((hostContext, services) =>
                 {
+                    services.AddLogging(config => config.AddNLog());
+
                     services.UseCanalService(produce=> produce.RegisterSingleton<RabbitHandler>());
 
                     services.Configure<RabitMqOption>(Configuration.GetSection("Rabbit"));

@@ -4,6 +4,7 @@ using Canal.Server;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using NLog.Extensions.Logging;
 
 namespace CanalRedis.Server
 {
@@ -11,7 +12,7 @@ namespace CanalRedis.Server
     {
         static void Main(string[] args)
         {
-            NLog.LogManager.LoadConfiguration("nlog.config");
+            NLog.LogManager.LoadConfiguration("NLog.Config");
 
             var Configuration = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json"))
@@ -24,6 +25,8 @@ namespace CanalRedis.Server
                     services.UseCanalService(produce=> produce.RegisterSingleton<RedisHandler>());
 
                     services.Configure<RedisOption>(Configuration.GetSection("Redis"));
+
+                    services.AddLogging(config => config.AddNLog());
 
                     services.AddSingleton<IConfiguration>(Configuration);
 

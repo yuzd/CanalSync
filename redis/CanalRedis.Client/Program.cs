@@ -15,7 +15,7 @@ namespace CanalRedis.Client
     {
         static void Main(string[] args)
         {
-            NLog.LogManager.LoadConfiguration("nlog.config");
+            NLog.LogManager.LoadConfiguration("NLog.Config");
 
             var builderConfig = new ConfigurationBuilder()
                 .AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json"))
@@ -36,7 +36,9 @@ namespace CanalRedis.Client
             var builder = new HostBuilder()
                 .ConfigureServices((hostContext, services) =>
                 {
+                    
                     services.AddHostedService<ConsumerService>();
+
                     services.AddMysqlEntitys<DB>("to", ops =>
                     {
                         ops.IsEnableLogTrace = false;
