@@ -6,6 +6,7 @@ namespace Canal.SqlParse
 {
     public interface IDbTypeMapper
     {
+        (bool, string) TransferToDb(DbContext dbContext, DataChange data);
 
         (string, List<DataParameter>) GetInsertSql(string tabelName, IList<ColumnData> cols);
 

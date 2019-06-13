@@ -107,11 +107,6 @@ namespace CanalRedis.Client
                 message = Redis.ListRightPop(topic);
                 if (string.IsNullOrEmpty(message)) return;
 
-
-
-                //先查看下这个
-
-
                 DataChange data = message.JsonToObject<DataChange>();
                 if (data == null || string.IsNullOrEmpty(data.DbName) || string.IsNullOrEmpty(data.TableName) || string.IsNullOrEmpty(data.EventType))
                 {
@@ -119,78 +114,11 @@ namespace CanalRedis.Client
                     return;
                 }
 
-                var cloumns = data.AfterColumnList == null || !data.AfterColumnList.Any()
-                    ? data.BeforeColumnList
-                    : data.AfterColumnList;
-
-                var primaryKey = cloumns.FirstOrDefault(r => r.IsKey);
-                if (primaryKey == null || string.IsNullOrEmpty(primaryKey.Value))
+                var result = _dbTypeMapper.TransferToDb(this._dbContext, data);
+                if (!result.Item1)
                 {
-                    //没有主键
-                    _logger.LogError($"Topic:{topic},Message:{message},revice data without primaryKey");
-                    return;
+                    _logger.LogError($"Topic:{topic},Message:{message},Error:{result.Item2}");
                 }
-
-                var sql = $"select count(*) from {data.TableName} where {primaryKey.Name} = @primaryValue";
-                //判断是否主键已存在？
-                var isExist = _dbContext.Execute<int>(sql, new { primaryValue = primaryKey.Value }) == 1;
-
-                if (data.EventType.Equals("INSERT"))
-                {
-                    if (isExist)
-                    {
-                        return;
-                    }
-
-                    var insertSql = _dbTypeMapper.GetInsertSql(data.TableName, cloumns);
-                    var insertR = _dbContext.Execute(insertSql.Item1, insertSql.Item2.ToArray()) > 0;
-
-                    if (!insertR)
-                    {
-                        _logger.LogError($"Topic:{topic},Message:{message},_dbContext.Insert(entity) return error");
-                        return;
-                    }
-                }
-                else if (data.EventType.Equals("DELETE"))
-                {
-                    if (!isExist)
-                    {
-                        return;
-                    }
-
-                    var deleteSql = _dbTypeMapper.GetDeleteSql(data.TableName, cloumns);
-                    var deleteR = _dbContext.Execute(deleteSql.Item1, deleteSql.Item2.ToArray()) > 0;
-                    if (!deleteR)
-                    {
-                        _logger.LogError($"Topic:{topic},Message:{message},_dbContext.Delete(entity) return error");
-                        return;
-                    }
-                }
-                else if (data.EventType.Equals("UPDATE"))
-                {
-                    if (!isExist)
-                    {
-                        var insertSql = _dbTypeMapper.GetInsertSql(data.TableName, cloumns);
-                        var insertR = _dbContext.Execute(insertSql.Item1, insertSql.Item2.ToArray()) > 0;
-                        if (!insertR)
-                        {
-                            _logger.LogError($"Topic:{topic},Message:{message},_dbContext.Update(entity) return error");
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        var updateSql = _dbTypeMapper.GetUpdateSql(data.TableName, cloumns);
-                        var updateR = _dbContext.Execute(updateSql.Item1, updateSql.Item2.ToArray()) > 0;
-                        if (!updateR)
-                        {
-                            _logger.LogError($"Topic:{topic},Message:{message},_dbContext.Update(entity) return error");
-                            return;
-                        }
-                    }
-
-                }
-
             }
             catch (Exception e)
             {
