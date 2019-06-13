@@ -39,7 +39,6 @@ namespace MysqlCanalMq.Client
 
             UpdateFromEnv(_rabitMqOption);
 
-            _rabitMqOption = rabitMqOption?.Value;
             if (string.IsNullOrEmpty(_rabitMqOption.Host) || string.IsNullOrEmpty(_rabitMqOption.UserName) ||
                 string.IsNullOrEmpty(_rabitMqOption.Password) || _rabitMqOption.Port < 1 || string.IsNullOrEmpty(_rabitMqOption.CanalDestinationName))
             {

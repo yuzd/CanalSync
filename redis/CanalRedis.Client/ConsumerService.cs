@@ -1,0 +1,250 @@
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using AntData.ORM.Data;
+using Canal.SqlParse;
+using Canal.SqlParse.Models;
+using Canal.SqlParse.Models.canal;
+using Canal.SqlParse.StaticExt;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using StackExchange.Redis;
+
+namespace CanalRedis.Client
+{
+    public class ConsumerService : IHostedService,IDisposable
+    {
+        private readonly ILogger _logger;
+        private readonly IConfiguration _configuration;
+        private readonly IDbTypeMapper _dbTypeMapper;
+        private readonly DbContext<DB> _dbContext;
+
+        private readonly IDatabase Redis;
+        private readonly ConnectionMultiplexer _conn;
+        private readonly List<string> _topicList = new List<string>();
+        public ConsumerService(ILogger<ConsumerService> logger, IOptions<RedisOption> redisOptions,DbContext<DB> dbContext, IConfiguration configuration, IDbTypeMapper dbTypeMapper)
+        {
+            _logger = logger;
+            _configuration = configuration;
+            _dbTypeMapper = dbTypeMapper;
+            _dbContext = dbContext;
+            var redisOptions1 = redisOptions.Value;
+            if (redisOptions1 == null)
+            {
+                redisOptions1 = new RedisOption();
+            }
+
+            UpdateFromEnv(redisOptions1);
+            
+            if (string.IsNullOrEmpty(redisOptions1.ConnectString))
+            {
+                throw new ArgumentNullException(nameof(RedisOption.ConnectString));
+            }
+
+            if (!redisOptions1.DbTables.Any())
+            {
+                throw new ArgumentNullException(nameof(RedisOption.DbTables));
+            }
+
+            if (string.IsNullOrEmpty(redisOptions1.ConnectString))
+            {
+                throw new ArgumentNullException(nameof(RedisOption.ConnectString));
+            }
+
+
+            ConfigurationOptions connectOptions = ConfigurationOptions.Parse(redisOptions1.ConnectString);
+            if (redisOptions1.ReconnectTimeout < 5000) redisOptions1.ReconnectTimeout = 5000;
+            connectOptions.ReconnectRetryPolicy = new LinearRetry(redisOptions1.ReconnectTimeout);
+
+            _conn = ConnectionMultiplexer.Connect(connectOptions);
+            Redis = _conn.GetDatabase();
+
+            foreach (var dbtable in redisOptions1.DbTables)
+            {
+                var queueName = !string.IsNullOrEmpty(redisOptions1.CanalDestinationName) ? $"{redisOptions1.CanalDestinationName}." : "";
+                queueName += dbtable;
+                _topicList.Add(queueName);
+            }
+
+            _logger.LogInformation($"Redis [{redisOptions1.ConnectString}] connect success");
+        }
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                //一个队列一个线程单独处理
+                foreach (var topic in _topicList)
+                {
+                    new Thread(() =>
+                    {
+                        while (!isDispose)
+                        {
+                            ReviceQueue(topic);
+                        }
+                    }).Start();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "redis consume client start error...");
+            }
+            return Task.CompletedTask;
+        }
+
+
+        private void ReviceQueue(string topic)
+        {
+            string message = null;
+            try
+            {
+                message = Redis.ListRightPop(topic);
+                if (string.IsNullOrEmpty(message)) return;
+
+
+
+                //先查看下这个
+
+
+                DataChange data = message.JsonToObject<DataChange>();
+                if (data == null || string.IsNullOrEmpty(data.DbName) || string.IsNullOrEmpty(data.TableName) || string.IsNullOrEmpty(data.EventType))
+                {
+                    _logger.LogError($"Topic:{topic},Message:{message},Content.JsonToObject<DataChange>()");
+                    return;
+                }
+
+                var cloumns = data.AfterColumnList == null || !data.AfterColumnList.Any()
+                    ? data.BeforeColumnList
+                    : data.AfterColumnList;
+
+                var primaryKey = cloumns.FirstOrDefault(r => r.IsKey);
+                if (primaryKey == null || string.IsNullOrEmpty(primaryKey.Value))
+                {
+                    //没有主键
+                    _logger.LogError($"Topic:{topic},Message:{message},revice data without primaryKey");
+                    return;
+                }
+
+                var sql = $"select count(*) from {data.TableName} where {primaryKey.Name} = @primaryValue";
+                //判断是否主键已存在？
+                var isExist = _dbContext.Execute<int>(sql, new { primaryValue = primaryKey.Value }) == 1;
+
+                if (data.EventType.Equals("INSERT"))
+                {
+                    if (isExist)
+                    {
+                        return;
+                    }
+
+                    var insertSql = _dbTypeMapper.GetInsertSql(data.TableName, cloumns);
+                    var insertR = _dbContext.Execute(insertSql.Item1, insertSql.Item2.ToArray()) > 0;
+
+                    if (!insertR)
+                    {
+                        _logger.LogError($"Topic:{topic},Message:{message},_dbContext.Insert(entity) return error");
+                        return;
+                    }
+                }
+                else if (data.EventType.Equals("DELETE"))
+                {
+                    if (!isExist)
+                    {
+                        return;
+                    }
+
+                    var deleteSql = _dbTypeMapper.GetDeleteSql(data.TableName, cloumns);
+                    var deleteR = _dbContext.Execute(deleteSql.Item1, deleteSql.Item2.ToArray()) > 0;
+                    if (!deleteR)
+                    {
+                        _logger.LogError($"Topic:{topic},Message:{message},_dbContext.Delete(entity) return error");
+                        return;
+                    }
+                }
+                else if (data.EventType.Equals("UPDATE"))
+                {
+                    if (!isExist)
+                    {
+                        var insertSql = _dbTypeMapper.GetInsertSql(data.TableName, cloumns);
+                        var insertR = _dbContext.Execute(insertSql.Item1, insertSql.Item2.ToArray()) > 0;
+                        if (!insertR)
+                        {
+                            _logger.LogError($"Topic:{topic},Message:{message},_dbContext.Update(entity) return error");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        var updateSql = _dbTypeMapper.GetUpdateSql(data.TableName, cloumns);
+                        var updateR = _dbContext.Execute(updateSql.Item1, updateSql.Item2.ToArray()) > 0;
+                        if (!updateR)
+                        {
+                            _logger.LogError($"Topic:{topic},Message:{message},_dbContext.Update(entity) return error");
+                            return;
+                        }
+                    }
+
+                }
+
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, $"Topic:{topic},Message:{message ?? ""}");
+            }
+
+        }
+
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            Dispose();
+            return Task.CompletedTask;
+        }
+
+
+
+        private volatile bool isDispose;
+        public void Dispose()
+        {
+            try
+            {
+                if (isDispose) return;
+                isDispose = true;
+                _conn.Dispose();
+                _logger.LogInformation("redis consume client stop succ...");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "redis consume client stop error...");
+            }
+        }
+
+        private void UpdateFromEnv(RedisOption _rab)
+        {
+            var host = _configuration["redis.connect"];
+            if (!string.IsNullOrEmpty(host))
+            {
+                _rab.ConnectString = host;
+            }
+
+            var retryTimeout = _configuration["redis.reconnectTimeout"];
+            if (!string.IsNullOrEmpty(retryTimeout))
+            {
+                _rab.ReconnectTimeout = int.Parse(retryTimeout);
+            }
+
+            var dbTables = _configuration["redis.dbTables"];
+            if (!string.IsNullOrEmpty(dbTables))
+            {
+                _rab.DbTables = dbTables.Split(':').ToList();
+            }
+
+        }
+    }
+
+}
