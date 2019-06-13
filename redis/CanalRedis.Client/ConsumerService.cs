@@ -84,9 +84,16 @@ namespace CanalRedis.Client
                 {
                     new Thread(() =>
                     {
-                        while (!isDispose)
+                        try
                         {
-                            ReviceQueue(topic);
+                            while (!isDispose)
+                            {
+                                ReviceQueue(topic);
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            //ignore
                         }
                     }).Start();
                 }
