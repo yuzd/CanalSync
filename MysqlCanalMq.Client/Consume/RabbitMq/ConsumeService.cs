@@ -42,35 +42,13 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
         {
             //如果不返回ACK 则 RabbitMQ 不会再发送数据
             message.Consumer.Model.BasicAck(message.BasicDeliver.DeliveryTag, true);
-
             if (string.IsNullOrEmpty(message.Content))
             {
                 return;
             }
-
             try
             {
-
                 DataChange data = message.Content.JsonToObject<DataChange>();
-
-                if (data == null || string.IsNullOrEmpty(data.DbName) || string.IsNullOrEmpty(data.TableName) || string.IsNullOrEmpty(data.EventType))
-                {
-                    OnAction?.Invoke(MessageLevel.Error, "Content.JsonToObject<DataChange>()", new Exception(message.Content));
-                    return;
-                }
-
-
-                var cloumns = data.AfterColumnList == null || !data.AfterColumnList.Any()
-                    ? data.BeforeColumnList
-                    : data.AfterColumnList;
-
-                var primaryKey = cloumns.FirstOrDefault(r => r.IsKey);
-                if (primaryKey == null || string.IsNullOrEmpty(primaryKey.Value))
-                {
-                    //没有主键
-                    OnAction?.Invoke(MessageLevel.Error, $"revice data without primaryKey", new Exception(message.Content));
-                    return;
-                }
                 var result = _dbTypeMapper.TransferToDb(this._dbContext, data);
                 if (!result.Item1)
                 {

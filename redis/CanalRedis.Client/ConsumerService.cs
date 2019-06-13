@@ -108,12 +108,6 @@ namespace CanalRedis.Client
                 if (string.IsNullOrEmpty(message)) return;
 
                 DataChange data = message.JsonToObject<DataChange>();
-                if (data == null || string.IsNullOrEmpty(data.DbName) || string.IsNullOrEmpty(data.TableName) || string.IsNullOrEmpty(data.EventType))
-                {
-                    _logger.LogError($"Topic:{topic},Message:{message},Content.JsonToObject<DataChange>()");
-                    return;
-                }
-
                 var result = _dbTypeMapper.TransferToDb(this._dbContext, data);
                 if (!result.Item1)
                 {
