@@ -107,6 +107,9 @@ namespace Canal.Server
             _canalTimer.Change(-1, -1);
             try
             {
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+
                 if (_canalConnector == null) return;
                 var messageList = _canalConnector.GetWithoutAck(_canalOption.GetCountsPerTimes);
                 var batchId = messageList.Id;
@@ -115,7 +118,11 @@ namespace Canal.Server
                     return;
                 }
 
-                Send(messageList.Entries, batchId);
+                var count = Send(messageList.Entries, batchId);
+
+                stopwatch.Stop();
+                var doutime = (int)stopwatch.Elapsed.TotalSeconds;
+                if (count > 0) _logger.LogInformation($"batchId:{batchId},count:{count},time:{(doutime > 300 ? ((int)stopwatch.Elapsed.TotalMinutes) + "分" : doutime + "秒")} send to mq success");
             }
             catch (ObjectDisposedException)
             {
@@ -137,11 +144,10 @@ namespace Canal.Server
         /// </summary>
         /// <param name="entrys">一个entry表示一个数据库变更</param>
         /// <param name="batchId"></param>
-        private void Send(List<Entry> entrys, long batchId)
+        private long Send(List<Entry> entrys, long batchId)
         {
-            var count = 0;
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
+            long count = 0;
+           
             foreach (var entry in entrys)
             {
                 if (entry.EntryType == EntryType.Transactionbegin || entry.EntryType == EntryType.Transactionend)
@@ -224,23 +230,22 @@ namespace Canal.Server
 
                         try
                         {
-                            _mediator.Publish(new CanalBody(dataChange)).ConfigureAwait(false).GetAwaiter().GetResult();
-                            count++;
+                            var message = new CanalBody(dataChange);
+                            _mediator.Publish(message).ConfigureAwait(false).GetAwaiter().GetResult();
+                            if(message.Succ)count++;
                         }
                         catch (Exception e)
                         {
                             _logger.LogError(e, "canal produce error:" + JsonConvert.SerializeObject(dataChange));
                             Dispose();
-                            return;
+                            return count;
                         }
                     }
                 }
             }
 
-            _canalConnector.Ack(batchId);
-            stopwatch.Stop();
-            var doutime = (int)stopwatch.Elapsed.TotalSeconds;
-            _logger.LogInformation($"batchId:{batchId},count:{count},time:{(doutime > 300 ? ((int)stopwatch.Elapsed.TotalMinutes) + "分" : doutime + "秒")} send to mq success");
+            _canalConnector.Ack(batchId);//如果程序突然关闭 cannal service 会关闭。这里就不会提交，下次重启应用消息会重复推送！
+            return count;
         }
 
         private List<ColumnData> DoConvertDataColumn(List<Column> columns)

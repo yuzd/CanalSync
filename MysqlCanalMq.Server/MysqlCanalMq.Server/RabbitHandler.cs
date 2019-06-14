@@ -74,6 +74,8 @@ namespace MysqlCanalMq.Server
             {
                 
                 ploicy.Execute(() => _produceRabbitMq.Produce(message));
+
+                notification.Succ = true;
             }
             catch (Exception)
             {

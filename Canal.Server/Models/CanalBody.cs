@@ -14,5 +14,6 @@ namespace Canal.Server.Models
         }
 
         public DataChange Message { get; }
+        public bool Succ { get; set; }
     }
 }

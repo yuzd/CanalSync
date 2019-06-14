@@ -70,7 +70,7 @@ namespace Canal.SqlParse
             }
 
 
-            var sql = $"select count(*) from {data.TableName} where {primaryKey.Name} = @primaryValue";
+            var sql = $"select count(*) from {data.TableName} where `{primaryKey.Name}` = @primaryValue";
             //判断是否主键已存在？
             var isExist = dbContext.Execute<int>(sql, new { primaryValue = primaryKey.Value }) == 1;
 
@@ -107,8 +107,15 @@ namespace Canal.SqlParse
                     dbContext.Execute(updateSql.Item1, updateSql.Item2.ToArray());
                 }
             }
+            else
+            {
 
-            return (false, "EventType is invalid");
+                return (false, "EventType is invalid");
+            }
+
+            return (true, string.Empty);
+
+
         }
 
         public (string, List<DataParameter>) GetInsertSql(string tabelName, IList<ColumnData> cols)
@@ -144,7 +151,7 @@ namespace Canal.SqlParse
             {
                 throw new NotSupportedException($"Table:{tabelName},Filed:{index.Name},MysqlType:{index.MysqlType} is not supported!");
             }
-            var sql = $"delete from {tabelName} where {index.Name} = @{index.Name}";
+            var sql = $"delete from {tabelName} where `{index.Name}` = @{index.Name}";
             return (sql, new List<DataParameter> { param });
         }
 
@@ -170,7 +177,7 @@ namespace Canal.SqlParse
                 }
 
                 dataParamList.Add(param);
-                pair.Add($" {column.Name} = @{column.Name} ");
+                pair.Add($" `{column.Name}` = @{column.Name} ");
 
             }
             sql += $" {string.Join(",", pair)} where {index.Name} = @{index.Name} ";

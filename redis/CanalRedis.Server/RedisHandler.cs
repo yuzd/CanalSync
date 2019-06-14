@@ -50,23 +50,31 @@ namespace CanalRedis.Server
             Redis = _conn.GetDatabase();
 
             _logger.LogInformation($"Redis [{_option.ConnectString}] connect success");
+            _logger.LogInformation($"Redis Produce Listening: {string.Join(",", _option.DbTables)}");
+
+            AppDomain.CurrentDomain.ProcessExit += (sender, args) => Dispose();
         }
 
         public Task Handle(CanalBody notification, CancellationToken cancellationToken)
         {
+
             var message = notification.Message;
+
+
             //过滤
             if (_option.DbTables.Any() && !_option.DbTables.Contains(message.DbName + "." + message.TableName))
             {
                 return Task.CompletedTask;
             }
 
+            //_logger.LogInformation($"Message:{message.CanalDestination + "," + message.DbName + "," + message.TableName }");
+
             var topic = !string.IsNullOrEmpty(message.CanalDestination) ? $"{message.CanalDestination}." : "";
             topic += !string.IsNullOrEmpty(message.DbName) ? $"{message.DbName}." : "";
             topic += message.TableName;
             if (string.IsNullOrEmpty(topic)) throw new ArgumentNullException(nameof(topic));
             string messageString = JsonConvert.SerializeObject(message);
-            
+
             var ploicy = Policy.Handle<Exception>()
                 .WaitAndRetry(new[]
                 {
@@ -79,17 +87,20 @@ namespace CanalRedis.Server
                 });
             try
             {
-                
+
                 ploicy.Execute(() =>
                 {
+                    //在队列的尾部添加
                     var length = Redis.ListRightPush(topic, messageString);
                     //设置队列的长度
                     Redis.StringSet(topic + ".length", "" + length);
+
+                    notification.Succ = true;
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,"redis mq send fail");
+                _logger.LogError(ex, $"redis mq send fail，{message.CanalDestination + "," + message.DbName + "," + message.TableName}");
                 throw;
             }
 

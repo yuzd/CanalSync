@@ -79,6 +79,7 @@ namespace CanalRedis.Client
                 {
                     new Thread(() =>
                     {
+                        _logger.LogInformation($"Redis Topic: [{topic}] Start Consume...");
                         try
                         {
                             while (!isDispose)
@@ -86,16 +87,17 @@ namespace CanalRedis.Client
                                 ReviceQueue(topic);
                             }
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
                             //ignore
+                            _logger.LogError(ex,$"Redis Topic: [{topic}] Consume Error...");
                         }
                     }).Start();
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "redis consume client start error...");
+                _logger.LogError(ex, "Redis consume client start error...");
             }
             return Task.CompletedTask;
         }
@@ -106,7 +108,8 @@ namespace CanalRedis.Client
             string message = null;
             try
             {
-                message = Redis.ListRightPop(topic);
+                //在队列的头部拿出
+                message = Redis.ListLeftPop(topic);
                 if (string.IsNullOrEmpty(message)) return;
 
                 DataChange data = message.JsonToObject<DataChange>();
