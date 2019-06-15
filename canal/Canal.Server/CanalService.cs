@@ -32,7 +32,7 @@ namespace Canal.Server
         {
             _logger = logger;
             _registerTypeList = new List<System.Type>();
-            if(register.SingletonConsumeList!=null && register.SingletonConsumeList.Any()) _registerTypeList.AddRange(register.SingletonConsumeList);
+            if (register.SingletonConsumeList != null && register.SingletonConsumeList.Any()) _registerTypeList.AddRange(register.SingletonConsumeList);
             if (register.ConsumeList != null && register.ConsumeList.Any()) _registerTypeList.AddRange(register.ConsumeList);
             _configuration = configuration;
             _canalOption = canalOption?.Value;
@@ -50,6 +50,7 @@ namespace Canal.Server
                 throw new ArgumentNullException("Canal param in appsettings.json is not correct!");
             }
 
+            if (string.IsNullOrEmpty(_canalOption.Subscribe)) _canalOption.Subscribe = ".*\\..*";
             _scope = scopeFactory.CreateScope();
 
         }
@@ -59,7 +60,7 @@ namespace Canal.Server
             {
                 _canalConnector = CanalConnectors.NewSingleConnector(_canalOption.Host, _canalOption.Port, _canalOption.Destination, _canalOption.MysqlName, _canalOption.MysqlPwd);
                 _canalConnector.Connect();
-                _canalConnector.Subscribe(".*\\..*");
+                _canalConnector.Subscribe(_canalOption.Subscribe);
                 _canalConnector.Rollback();
                 _canalTimer = new System.Threading.Timer(CanalGetData, null, _canalOption.Timer * 1000, _canalOption.Timer * 1000);
                 _logger.LogInformation("canal client start success...");
@@ -121,11 +122,28 @@ namespace Canal.Server
                     return;
                 }
 
-                var count = Send(messageList.Entries, batchId);
+                var result = Send(messageList.Entries, batchId);
+
 
                 stopwatch.Stop();
+
+                if (result.Item1 < 1) return;
+
                 var doutime = (int)stopwatch.Elapsed.TotalSeconds;
-                if (count > 0) _logger.LogInformation($"batchId:{batchId},count:{count},time:{(doutime > 300 ? ((int)stopwatch.Elapsed.TotalMinutes) + "分" : doutime + "秒")} send to mq success");
+                var time = doutime > 1 ? ParseTimeSeconds(doutime) : stopwatch.Elapsed.TotalMilliseconds + "ms";
+
+                if (result.Item2 == null)
+                {
+                    return;
+                }
+
+                foreach (var item in result.Item2)
+                {
+                    if (item.Value.Total > 0)
+                    {
+                        _logger.LogInformation($"batchId:{batchId},batchCount:{result.Item1},batchTime:{time},process:{item.Key},processTotal:{item.Value.Total},processSucc:{item.Value.SuccessCount},processTime:{item.Value.ProcessTime}");
+                    }
+                }
             }
             catch (ObjectDisposedException)
             {
@@ -147,10 +165,66 @@ namespace Canal.Server
         /// </summary>
         /// <param name="entrys">一个entry表示一个数据库变更</param>
         /// <param name="batchId"></param>
-        private long Send(List<Entry> entrys, long batchId)
+        private (long, Dictionary<string, ProcessResult>) Send(List<Entry> entrys, long batchId)
         {
-            long count = 0;
-           
+            var canalBodyList = GetCanalBodyList(entrys);
+            if (canalBodyList.Count < 1)
+            {
+                return (0, null);
+            }
+
+
+            if (_registerTypeList == null || !_registerTypeList.Any())
+            {
+                return (0, null);
+            }
+
+            Dictionary<string, ProcessResult> result = new Dictionary<string, ProcessResult>();
+            foreach (var re in _registerTypeList)
+            {
+                // ReSharper disable once AssignNullToNotNullAttribute
+                result.Add(re.FullName, new ProcessResult());
+            }
+
+            try
+            {
+                foreach (var type in _registerTypeList)
+                {
+                    Stopwatch stopwatch = new Stopwatch();
+                    stopwatch.Start();
+                    // ReSharper disable once AssignNullToNotNullAttribute
+                    var re = result[type.FullName];
+                    foreach (var message in canalBodyList)
+                    {
+                        var service = _scope.ServiceProvider.GetRequiredService(type) as INotificationHandler<CanalBody>;
+                        service?.Handle(message).ConfigureAwait(false).GetAwaiter().GetResult();
+                        re.Total++;
+                        if (message.Succ)
+                        {
+                            re.SuccessCount++;
+                        }
+                    }
+                    stopwatch.Stop();
+                    var doutime = (int)stopwatch.Elapsed.TotalSeconds;
+                    var time = doutime > 1 ? ParseTimeSeconds(doutime) : stopwatch.Elapsed.TotalMilliseconds + "ms";
+                    re.ProcessTime = time;
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "canal produce error,end process!");
+                Dispose();
+                return (canalBodyList.Count, result);
+            }
+
+            _canalConnector.Ack(batchId);//如果程序突然关闭 cannal service 会关闭。这里就不会提交，下次重启应用消息会重复推送！
+            return (canalBodyList.Count, result);
+        }
+
+
+        private List<CanalBody> GetCanalBodyList(List<Entry> entrys)
+        {
+            var result = new List<CanalBody>();
             foreach (var entry in entrys)
             {
                 if (entry.EntryType == EntryType.Transactionbegin || entry.EntryType == EntryType.Transactionend)
@@ -160,12 +234,6 @@ namespace Canal.Server
 
                 //没有拿到db名称或者表名称的直接排除
                 if (string.IsNullOrEmpty(entry.Header.SchemaName) || string.IsNullOrEmpty(entry.Header.TableName)) continue;
-
-                ////排除不要监听的表
-                //if (_canalOption.DbTables.Any() && !_canalOption.DbTables.Contains(entry.Header.TableName))
-                //{
-                //    continue;
-                //}
 
 
                 RowChange rowChange = null;
@@ -231,32 +299,15 @@ namespace Canal.Server
                             continue;
                         }
 
-                        try
-                        {
-                            var message = new CanalBody(dataChange);
-                            if (_registerTypeList != null && _registerTypeList.Any())
-                            {
-                                foreach (var type in _registerTypeList)
-                                {
-                                    var service = _scope.ServiceProvider.GetRequiredService(type) as INotificationHandler<CanalBody>;
-                                    service?.Handle(message).ConfigureAwait(false).GetAwaiter().GetResult();
-                                    if (message.Succ) count++;
-                                }
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.LogError(e, "canal produce error:" + JsonConvert.SerializeObject(dataChange));
-                            Dispose();
-                            return count;
-                        }
+                        var message = new CanalBody(dataChange);
+                        result.Add(message);
                     }
                 }
             }
 
-            _canalConnector.Ack(batchId);//如果程序突然关闭 cannal service 会关闭。这里就不会提交，下次重启应用消息会重复推送！
-            return count;
+            return result;
         }
+
 
         private List<ColumnData> DoConvertDataColumn(List<Column> columns)
         {
@@ -299,7 +350,11 @@ namespace Canal.Server
             {
                 _can.Destination = destinations;
             }
-
+            var subcribe = _configuration["canal.subscribe"];
+            if (!string.IsNullOrEmpty(subcribe))
+            {
+                _can.Subscribe = subcribe;
+            }
             var dbUsername = _configuration["canal.dbUsername"];
             if (!string.IsNullOrEmpty(dbUsername))
             {
@@ -325,5 +380,59 @@ namespace Canal.Server
             }
 
         }
+
+
+        ///<summary>
+        ///由秒数得到日期几天几小时。。。
+        ///</summary
+        ///<param name="t">秒数</param>
+        ///<param name="type">0：转换后带秒，1:转换后不带秒</param>
+        ///<returns>几天几小时几分几秒</returns>
+        private string ParseTimeSeconds(int t, int type = 0)
+        {
+            string r = "";
+            int day, hour, minute, second;
+            if (t >= 86400) //天,
+            {
+                day = Convert.ToInt16(t / 86400);
+                hour = Convert.ToInt16((t % 86400) / 3600);
+                minute = Convert.ToInt16((t % 86400 % 3600) / 60);
+                second = Convert.ToInt16(t % 86400 % 3600 % 60);
+                if (type == 0)
+                    r = day + ("D") + hour + ("H") + minute + ("M") + second + ("S");
+                else
+                    r = day + ("D") + hour + ("H") + minute + ("M");
+
+            }
+            else if (t >= 3600)//时,
+            {
+                hour = Convert.ToInt16(t / 3600);
+                minute = Convert.ToInt16((t % 3600) / 60);
+                second = Convert.ToInt16(t % 3600 % 60);
+                if (type == 0)
+                    r = hour + ("H") + minute + ("M") + second + ("S");
+                else
+                    r = hour + ("H") + minute + ("M");
+            }
+            else if (t >= 60)//分
+            {
+                minute = Convert.ToInt16(t / 60);
+                second = Convert.ToInt16(t % 60);
+                r = minute + ("M") + second + ("S");
+            }
+            else
+            {
+                second = Convert.ToInt16(t);
+                r = second + ("S");
+            }
+            return r;
+        }
+    }
+
+    struct ProcessResult
+    {
+        public long Total { get; set; }
+        public long SuccessCount { get; set; }
+        public string ProcessTime { get; set; }
     }
 }

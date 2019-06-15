@@ -22,6 +22,7 @@ namespace Canal.Server.Models
         public string Host { get; set; }
         public int Port { get; set; }
         public string Destination { get; set; }
+        public string Subscribe { get; set; }
         public string MysqlName { get; set; }
         public string MysqlPwd { get; set; }
         public int Timer { get; set; }
