@@ -30,10 +30,11 @@
         <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.2.0" />
         <PackageReference Include="NLog.Extensions.Logging" Version="1.4.0" />
         <PackageReference Include="StackExchange.Redis" Version="2.0.601" />
+        <PackageReference Include="Polly" Version="7.1.0" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\Canal.Server\Canal.Server.csproj" />
+      <ProjectReference Include="..\..\canal\Canal.Server\Canal.Server.csproj" />
     </ItemGroup>
 
 

@@ -8,7 +8,7 @@ using Canal.SqlParse.Models.canal;
 
 namespace Canal.SqlParse
 {
-    public class MysqlDbTypeMapper : IDbTypeMapper
+    internal class MysqlDbTypeMapper : IDbTypeMapper
     {
         private static Dictionary<string, (Type, AntData.ORM.DataType)> dic = new Dictionary<string, (Type, AntData.ORM.DataType)>();
 

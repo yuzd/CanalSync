@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MediatR;
+using Canal.Server.Interface;
 
 namespace Canal.Server.Models
 {

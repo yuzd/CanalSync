@@ -4,11 +4,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Canal.Server.Interface;
 using Canal.Server.Models;
 using CanalSharp.Client;
 using CanalSharp.Client.Impl;
 using Com.Alibaba.Otter.Canal.Protocol;
-using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -26,11 +26,14 @@ namespace Canal.Server
         private ICanalConnector _canalConnector;
         private bool _isDispose = false;
         private readonly IServiceScope _scope;
-        private readonly IMediator _mediator;
         private readonly IConfiguration _configuration;
-        public CanalService(ILogger<CanalService> logger, IOptions<CanalOption> canalOption, IServiceScopeFactory scopeFactory, IConfiguration configuration)
+        private readonly List<System.Type> _registerTypeList;
+        public CanalService(ILogger<CanalService> logger, IOptions<CanalOption> canalOption, IServiceScopeFactory scopeFactory, IConfiguration configuration, CanalConsumeRegister register)
         {
             _logger = logger;
+            _registerTypeList = new List<System.Type>();
+            if(register.SingletonConsumeList!=null && register.SingletonConsumeList.Any()) _registerTypeList.AddRange(register.SingletonConsumeList);
+            if (register.ConsumeList != null && register.ConsumeList.Any()) _registerTypeList.AddRange(register.ConsumeList);
             _configuration = configuration;
             _canalOption = canalOption?.Value;
             if (_canalOption == null)
@@ -48,7 +51,7 @@ namespace Canal.Server
             }
 
             _scope = scopeFactory.CreateScope();
-            _mediator = _scope.ServiceProvider.GetRequiredService<IMediator>();
+
         }
         public Task StartAsync(CancellationToken cancellationToken)
         {
@@ -231,8 +234,15 @@ namespace Canal.Server
                         try
                         {
                             var message = new CanalBody(dataChange);
-                            _mediator.Publish(message).ConfigureAwait(false).GetAwaiter().GetResult();
-                            if(message.Succ)count++;
+                            if (_registerTypeList != null && _registerTypeList.Any())
+                            {
+                                foreach (var type in _registerTypeList)
+                                {
+                                    var service = _scope.ServiceProvider.GetRequiredService(type) as INotificationHandler<CanalBody>;
+                                    service?.Handle(message).ConfigureAwait(false).GetAwaiter().GetResult();
+                                    if (message.Succ) count++;
+                                }
+                            }
                         }
                         catch (Exception e)
                         {

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using AntData.ORM.Data;
+using Canal.Server;
 using Canal.SqlParse;
 using Canal.SqlParse.Models;
 using Microsoft.Extensions.Configuration;
@@ -40,6 +41,8 @@ namespace MysqlCanalMq.Client
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddHostedService<ConsumerService>();
+                    services.UseMysqlParseService();
+
                     services.AddMysqlEntitys<DB>("to", ops =>
                     {
                         ops.IsEnableLogTrace = false;
@@ -52,7 +55,6 @@ namespace MysqlCanalMq.Client
 
                     services.AddSingleton<IConfiguration>(builderConfig);
 
-                    services.AddSingleton<IDbTypeMapper>(new MysqlDbTypeMapper());
                 });
 
             builder.Build().Run();

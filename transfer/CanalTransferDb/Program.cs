@@ -38,8 +38,8 @@ namespace CanalTransferDb
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<MysqlOption>(builderConfig.GetSection("Mysql"));
-
                     services.UseCanalService(produce => produce.RegisterSingleton<MysqlHandler>());
+                    services.UseMysqlParseService();
 
                     services.AddMysqlEntitys<DB>("to", ops =>
                     {
@@ -51,7 +51,6 @@ namespace CanalTransferDb
 
                     services.AddSingleton<IConfiguration>(builderConfig);
 
-                    services.AddSingleton<IDbTypeMapper>(new MysqlDbTypeMapper());
                 });
 
             builder.Build().Run();

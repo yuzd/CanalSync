@@ -3,8 +3,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Canal.Server.Interface;
 using Canal.Server.Models;
-using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,9 +20,9 @@ namespace CanalRedis.Server
     public class RedisHandler : INotificationHandler<CanalBody>, IDisposable
     {
         private readonly ILogger _logger;
-        private IDatabase Redis;
-        private RedisOption _option;
-        private ConnectionMultiplexer _conn;
+        private readonly IDatabase Redis;
+        private readonly RedisOption _option;
+        private readonly ConnectionMultiplexer _conn;
         private readonly IConfiguration _configuration;
 
         public RedisHandler(ILogger<RedisHandler> logger, IOptions<RedisOption> options, IConfiguration configuration)
@@ -55,7 +55,7 @@ namespace CanalRedis.Server
             AppDomain.CurrentDomain.ProcessExit += (sender, args) => Dispose();
         }
 
-        public Task Handle(CanalBody notification, CancellationToken cancellationToken)
+        public Task Handle(CanalBody notification)
         {
 
             var message = notification.Message;

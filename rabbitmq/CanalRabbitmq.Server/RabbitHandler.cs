@@ -4,8 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Canal.Server.Interface;
 using Canal.Server.Models;
-using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -51,7 +51,7 @@ namespace MysqlCanalMq.Server
             }
         }
 
-        public Task Handle(CanalBody notification, CancellationToken cancellationToken)
+        public Task Handle(CanalBody notification)
         {
             var message = notification.Message;
             //过滤

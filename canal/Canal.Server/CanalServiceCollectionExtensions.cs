@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Canal.Server.Interface;
 using Canal.Server.Models;
-using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -31,18 +33,24 @@ namespace Canal.Server
 
             serviceCollection.AddTransient<IHostedService,CanalService>();
 
-            var typeList = new List<Type>();
 
-            if(registerModel.ConsumeList.Any()) typeList.AddRange(registerModel.ConsumeList);
-            if(registerModel.SingletonConsumeList.Any()) typeList.AddRange(registerModel.SingletonConsumeList);
-
-            serviceCollection.AddMediatR(typeList.ToArray());
-
-            foreach (var handler in registerModel.SingletonConsumeList)
+            if (registerModel.ConsumeList.Any())
             {
-                //处理类改成单例模式
-                serviceCollection.Replace(new ServiceDescriptor(typeof(INotificationHandler<CanalBody>), handler, ServiceLifetime.Singleton));
+                foreach (var type in registerModel.ConsumeList)
+                {
+                    serviceCollection.TryAddTransient(type);
+                }
             }
+
+            if (registerModel.SingletonConsumeList.Any())
+            {
+                foreach (var type in registerModel.SingletonConsumeList)
+                {
+                    serviceCollection.TryAddSingleton(type);
+                }
+            }
+
+            serviceCollection.AddSingleton(registerModel);
 
             return serviceCollection;
 
@@ -101,4 +109,6 @@ namespace Canal.Server
         }
 
     }
+
+
 }

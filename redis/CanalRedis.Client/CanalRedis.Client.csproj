@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Canal.SqlParse\Canal.SqlParse.csproj" />
+    <ProjectReference Include="..\..\canal\Canal.SqlParse\Canal.SqlParse.csproj" />
   </ItemGroup>
 
   <ItemGroup>

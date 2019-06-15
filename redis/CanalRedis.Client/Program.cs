@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using AntData.ORM.Data;
+using Canal.Server;
 using Canal.SqlParse;
 using Canal.SqlParse.Models;
 using Microsoft.Extensions.Configuration;
@@ -38,6 +39,7 @@ namespace CanalRedis.Client
                 {
                     
                     services.AddHostedService<ConsumerService>();
+                    services.UseMysqlParseService();
 
                     services.AddMysqlEntitys<DB>("to", ops =>
                     {
@@ -51,7 +53,6 @@ namespace CanalRedis.Client
 
                     services.AddSingleton<IConfiguration>(builderConfig);
 
-                    services.AddSingleton<IDbTypeMapper>(new MysqlDbTypeMapper());
                 });
 
             builder.Build().Run();
