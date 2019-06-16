@@ -7,7 +7,8 @@
     <Company>yuzd</Company>
     <Product>Canal.Server Middlerware for netcore</Product>
     <Description>Canal.Server Middlerware for netcore</Description>
-    <PackageProjectUrl>https://github.com/yuzd</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/yuzd/CanalSync</PackageProjectUrl>
+    <Version>1.0.1</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.0.0" />

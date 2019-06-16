@@ -2,6 +2,12 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
+        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Authors>yuzd</Authors>
+        <Company>yuzd</Company>
+        <Description>Canal Sql Parse Middlerware for netcore</Description>
+        <PackageProjectUrl>https://github.com/yuzd/CanalSync</PackageProjectUrl>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="AntData.Core" Version="1.4.0" />
