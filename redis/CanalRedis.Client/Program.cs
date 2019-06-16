@@ -22,16 +22,11 @@ namespace CanalRedis.Client
                 .AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json"))
                 .AddEnvironmentVariables().Build();
 
-            AntData.ORM.Common.Configuration.Linq.AllowMultipleQuery = true;
-
-            AntData.ORM.Common.Configuration.UseDBConfig(builderConfig);
-
             var connectionString = builderConfig["consume.db"];
-            if (!string.IsNullOrEmpty(connectionString))
+
+            if (string.IsNullOrEmpty(connectionString))
             {
-                var dbConnectionConfig = AntData.ORM.Common.Configuration.DBSettings.DatabaseSettings.First().ConnectionItemList.First();
-                dbConnectionConfig.ConnectionString = connectionString;
-                Console.WriteLine(connectionString);
+                connectionString = builderConfig["Mysql.ConnectionString"];
             }
 
             var builder = new HostBuilder()
@@ -39,13 +34,8 @@ namespace CanalRedis.Client
                 {
                     
                     services.AddHostedService<ConsumerService>();
-                    services.UseMysqlParseService();
+                    services.AddMysqlParseService(connectionString);
 
-                    services.AddMysqlEntitys<DB>("to", ops =>
-                    {
-                        ops.IsEnableLogTrace = false;
-                        ops.OnLogTrace = OnLogTrace;
-                    });
 
                     services.AddLogging(config => config.AddNLog());
 

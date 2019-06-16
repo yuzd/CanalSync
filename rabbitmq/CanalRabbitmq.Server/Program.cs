@@ -27,7 +27,7 @@ namespace MysqlCanalMq.Server
                 {
                     services.AddLogging(config => config.AddNLog());
 
-                    services.UseCanalService(produce=> produce.RegisterSingleton<RabbitHandler>());
+                    services.AddCanalService(produce=> produce.RegisterSingleton<RabbitHandler>());
 
                     services.Configure<RabitMqOption>(Configuration.GetSection("Rabbit"));
 

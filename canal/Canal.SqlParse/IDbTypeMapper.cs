@@ -4,9 +4,9 @@ using Canal.SqlParse.Models.canal;
 
 namespace Canal.SqlParse
 {
-    public interface IDbTypeMapper
+    public interface IDbTransfer
     {
-        (bool, string) TransferToDb(DbContext dbContext, DataChange data);
+        (bool, string) TransferToDb(DataChange data);
 
         (string, List<DataParameter>) GetInsertSql(string tabelName, IList<ColumnData> cols);
 

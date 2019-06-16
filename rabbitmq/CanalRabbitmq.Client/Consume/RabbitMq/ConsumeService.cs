@@ -13,11 +13,9 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
     public class ConsumeService : MQServiceBase
     {
         public Action<MessageLevel, string, Exception> OnAction = null;
-        private readonly DbContext<DB> _dbContext;
-        private readonly IDbTypeMapper _dbTypeMapper;
-        public ConsumeService(RabitMqOption config, string dbtable, DbContext<DB> dbContext, IDbTypeMapper dbTypeMapper) : base(config)
+        private readonly IDbTransfer _dbTypeMapper;
+        public ConsumeService(RabitMqOption config, string dbtable,IDbTransfer dbTypeMapper) : base(config)
         {
-            _dbContext = dbContext;
             _dbTypeMapper = dbTypeMapper;
             var queueName = !string.IsNullOrEmpty(config.CanalDestinationName) ? $"{config.CanalDestinationName}." : "";
             queueName += dbtable;
@@ -49,7 +47,7 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
             try
             {
                 DataChange data = message.Content.JsonToObject<DataChange>();
-                var result = _dbTypeMapper.TransferToDb(this._dbContext, data);
+                var result = _dbTypeMapper.TransferToDb(data);
                 if (!result.Item1)
                 {
                     OnAction?.Invoke(MessageLevel.Error, $"TransferToDb Error", new Exception(result.Item2));

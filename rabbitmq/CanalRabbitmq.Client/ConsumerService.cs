@@ -23,14 +23,12 @@ namespace MysqlCanalMq.Client
         private readonly RabitMqOption _rabitMqOption;
         private MQServcieManager _manager;
         private IConfiguration _configuration;
-        private IDbTypeMapper _dbTypeMapper;
-        private DbContext<DB> _dbContext;
-        public ConsumerService(ILogger<ConsumerService> logger, IOptions<RabitMqOption> rabitMqOption,DbContext<DB> dbContext, IConfiguration configuration, IDbTypeMapper dbTypeMapper)
+        private IDbTransfer _dbTypeMapper;
+        public ConsumerService(ILogger<ConsumerService> logger, IOptions<RabitMqOption> rabitMqOption, IConfiguration configuration, IDbTransfer dbTypeMapper)
         {
             _logger = logger;
             _configuration = configuration;
             _dbTypeMapper = dbTypeMapper;
-            _dbContext = dbContext;
             _rabitMqOption = rabitMqOption.Value;
             if (_rabitMqOption == null)
             {
@@ -59,7 +57,7 @@ namespace MysqlCanalMq.Client
 
                 foreach (var dbMapping in _rabitMqOption.DbTables)
                 {
-                    _manager.AddService(new ConsumeService(_rabitMqOption, dbMapping, _dbContext, _dbTypeMapper)
+                    _manager.AddService(new ConsumeService(_rabitMqOption, dbMapping, _dbTypeMapper)
                     {
                         OnAction = OnActionOutput
                     });

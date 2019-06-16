@@ -14,7 +14,7 @@ namespace Canal.Server
 {
     public static class CanalServiceCollectionExtensions
     {
-        public static IServiceCollection UseCanalService(this IServiceCollection serviceCollection,Action<CanalConsumeRegister> register ) 
+        public static IServiceCollection AddCanalService(this IServiceCollection serviceCollection,Action<CanalConsumeRegister> register ) 
         {
             if (register == null) throw new ArgumentNullException(nameof(register));
 

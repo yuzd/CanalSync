@@ -17,20 +17,37 @@ using Newtonsoft.Json;
 
 namespace CanalTransferDb
 {
+
+    public class TestHandler:INotificationHandler<CanalBody>
+    {
+
+        private readonly IDbTransfer _dbTransfer;
+        public TestHandler(IDbTransfer dbTransfer)
+        {
+            _dbTransfer = dbTransfer;
+        }
+        public Task Handle(CanalBody notification)
+        {
+            //写消费逻辑
+            var messageStr = JsonConvert.SerializeObject(notification.Message);
+            Canal.SqlParse.Models.canal.DataChange data = messageStr.JsonToObject<Canal.SqlParse.Models.canal.DataChange>();
+            _dbTransfer.TransferToDb(data);
+            return Task.CompletedTask;;
+        }
+    }
+
     public class MysqlHandler : INotificationHandler<CanalBody>
     {
         private readonly ILogger _logger;
-        private readonly DbContext<DB> _dbContext;
-        private readonly IDbTypeMapper _dbTypeMapper;
+        private readonly IDbTransfer _dbTypeMapper;
         private readonly MysqlOption _option;
         private readonly IConfiguration _configuration;
 
-        public MysqlHandler(ILogger<MysqlHandler> logger,IOptions<MysqlOption> options, DbContext<DB> dbContext, IDbTypeMapper dbTypeMapper, IConfiguration configuration)
+        public MysqlHandler(ILogger<MysqlHandler> logger,IOptions<MysqlOption> options,IDbTransfer dbTypeMapper, IConfiguration configuration)
         {
             _logger = logger;
             _configuration = configuration;
             _dbTypeMapper = dbTypeMapper;
-            _dbContext = dbContext;
             _option = options?.Value;
             if (_option == null)
             {
@@ -56,7 +73,7 @@ namespace CanalTransferDb
 
             var messageStr = JsonConvert.SerializeObject(message);
             Canal.SqlParse.Models.canal.DataChange data = messageStr.JsonToObject<Canal.SqlParse.Models.canal.DataChange>();
-            var result = _dbTypeMapper.TransferToDb(this._dbContext, data);
+            var result = _dbTypeMapper.TransferToDb(data);
             if (!result.Item1)
             {
                 _logger.LogError($"Topic:{message.CanalDestination+"."+message.DbName+"."+message.TableName},Message:{messageStr},Error:{result.Item2}");

@@ -22,18 +22,16 @@ namespace CanalRedis.Client
     {
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
-        private readonly IDbTypeMapper _dbTypeMapper;
-        private readonly DbContext<DB> _dbContext;
+        private readonly IDbTransfer _dbTypeMapper;
 
         private readonly IDatabase Redis;
         private readonly ConnectionMultiplexer _conn;
         private readonly List<string> _topicList = new List<string>();
-        public ConsumerService(ILogger<ConsumerService> logger, IOptions<RedisOption> redisOptions,DbContext<DB> dbContext, IConfiguration configuration, IDbTypeMapper dbTypeMapper)
+        public ConsumerService(ILogger<ConsumerService> logger, IOptions<RedisOption> redisOptions,IConfiguration configuration, IDbTransfer dbTypeMapper)
         {
             _logger = logger;
             _configuration = configuration;
             _dbTypeMapper = dbTypeMapper;
-            _dbContext = dbContext;
             var redisOptions1 = redisOptions?.Value;
             if (redisOptions1 == null)
             {
@@ -113,7 +111,7 @@ namespace CanalRedis.Client
                 if (string.IsNullOrEmpty(message)) return;
 
                 DataChange data = message.JsonToObject<DataChange>();
-                var result = _dbTypeMapper.TransferToDb(this._dbContext, data);
+                var result = _dbTypeMapper.TransferToDb( data);
                 if (!result.Item1)
                 {
                     _logger.LogError($"Topic:{topic},Message:{message},Error:{result.Item2}");

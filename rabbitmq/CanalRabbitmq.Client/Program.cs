@@ -25,29 +25,19 @@ namespace MysqlCanalMq.Client
                 .AddJsonFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json"))
                 .AddEnvironmentVariables().Build();
 
-            AntData.ORM.Common.Configuration.Linq.AllowMultipleQuery = true;
-
-            AntData.ORM.Common.Configuration.UseDBConfig(builderConfig);
-
             var connectionString = builderConfig["consume.db"];
-            if (!string.IsNullOrEmpty(connectionString))
+
+            if (string.IsNullOrEmpty(connectionString))
             {
-                var dbConnectionConfig = AntData.ORM.Common.Configuration.DBSettings.DatabaseSettings.First().ConnectionItemList.First();
-                dbConnectionConfig.ConnectionString = connectionString;
-                Console.WriteLine(connectionString);
+                connectionString = builderConfig["Mysql.ConnectionString"];
             }
 
             var builder = new HostBuilder()
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddHostedService<ConsumerService>();
-                    services.UseMysqlParseService();
 
-                    services.AddMysqlEntitys<DB>("to", ops =>
-                    {
-                        ops.IsEnableLogTrace = false;
-                        ops.OnLogTrace = OnLogTrace;
-                    });
+                    services.AddMysqlParseService(connectionString);
 
                     services.AddLogging(config => config.AddNLog());
 
@@ -60,9 +50,5 @@ namespace MysqlCanalMq.Client
             builder.Build().Run();
         }
 
-        private static void OnLogTrace(CustomerTraceInfo obj)
-        {
-
-        }
     }
 }

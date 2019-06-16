@@ -22,7 +22,7 @@ namespace CanalRedis.Server
             var builder = new HostBuilder()
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.UseCanalService(produce => produce.RegisterSingleton<RedisHandler>());
+                    services.AddCanalService(produce => produce.RegisterSingleton<RedisHandler>());
 
                     services.Configure<RedisOption>(Configuration.GetSection("Redis"));
 
