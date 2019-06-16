@@ -6,13 +6,18 @@ namespace Canal.SqlParse
 {
     public interface IDbTransfer
     {
-        (bool, string) TransferToDb(DataChange data);
+        DbTransferResult TransferToDb(DataChange data);
 
-        (string, List<DataParameter>) GetInsertSql(string tabelName, IList<ColumnData> cols);
+    }
 
-        (string, List<DataParameter>) GetDeleteSql(string tabelName, IList<ColumnData> cols);
-
-        (string, List<DataParameter>) GetUpdateSql(string tabelName, IList<ColumnData> cols);
-
+    public class DbTransferResult
+    {
+        public DbTransferResult(bool success,string msg)
+        {
+            Success = success;
+            Msg = msg;
+        }
+        public bool Success { get; set; }
+        public string Msg { get; set; }
     }
 }

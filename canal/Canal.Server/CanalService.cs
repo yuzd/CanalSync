@@ -141,7 +141,14 @@ namespace Canal.Server
                 {
                     if (item.Value.Total > 0)
                     {
-                        _logger.LogInformation($"batchId:{batchId},batchCount:{result.Item1},batchTime:{time},process:{item.Key},processTotal:{item.Value.Total},processSucc:{item.Value.SuccessCount},processTime:{item.Value.ProcessTime}");
+                        _logger.LogInformation($"【batchId:{batchId}】batchCount:{result.Item1},batchTime:{time},process:{item.Key},processTotal:{item.Value.Total},processSucc:{item.Value.SuccessCount},processTime:{item.Value.ProcessTime}");
+                        if (result.Item3 != null && result.Item3.Any())
+                        {
+                            foreach (var groupResult in result.Item3)
+                            {
+                                _logger.LogInformation($"batchId:{batchId},process:{item.Key},target:{groupResult.Item1},count:{groupResult.Item2}");
+                            }
+                        }
                     }
                 }
             }
@@ -165,18 +172,26 @@ namespace Canal.Server
         /// </summary>
         /// <param name="entrys">一个entry表示一个数据库变更</param>
         /// <param name="batchId"></param>
-        private (long, Dictionary<string, ProcessResult>) Send(List<Entry> entrys, long batchId)
+        private (long, Dictionary<string, ProcessResult>,List<(string,long)>) Send(List<Entry> entrys, long batchId)
         {
             var canalBodyList = GetCanalBodyList(entrys);
             if (canalBodyList.Count < 1)
             {
-                return (0, null);
+                return (0, null,null);
             }
 
 
             if (_registerTypeList == null || !_registerTypeList.Any())
             {
-                return (0, null);
+                return (0, null,null);
+            }
+
+            var groupCount = new List<(string,long)>();
+            //分组日志
+            var group = canalBodyList.Select(r => r.Message).GroupBy(r => new {r.DbName, r.TableName, r.EventType});
+            foreach (var g in group)
+            {
+                groupCount.Add(($"{g.Key.DbName}.{g.Key.TableName}.{g.Key.EventType}",g.Count()));
             }
 
             Dictionary<string, ProcessResult> result = new Dictionary<string, ProcessResult>();
@@ -214,11 +229,11 @@ namespace Canal.Server
             {
                 _logger.LogError(e, "canal produce error,end process!");
                 Dispose();
-                return (canalBodyList.Count, result);
+                return (canalBodyList.Count, result, groupCount);
             }
 
             _canalConnector.Ack(batchId);//如果程序突然关闭 cannal service 会关闭。这里就不会提交，下次重启应用消息会重复推送！
-            return (canalBodyList.Count, result);
+            return (canalBodyList.Count, result, groupCount);
         }
 
 
@@ -429,7 +444,7 @@ namespace Canal.Server
         }
     }
 
-    struct ProcessResult
+    class  ProcessResult
     {
         public long Total { get; set; }
         public long SuccessCount { get; set; }

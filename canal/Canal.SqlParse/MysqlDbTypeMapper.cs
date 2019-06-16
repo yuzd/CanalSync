@@ -6,12 +6,13 @@ using AntData.ORM;
 using AntData.ORM.Data;
 using Canal.SqlParse.Models;
 using Canal.SqlParse.Models.canal;
+using Microsoft.Extensions.Logging;
 
 namespace Canal.SqlParse
 {
     internal class MysqlDbTypeMapper : IDbTransfer
     {
-        private static Dictionary<string, (Type, AntData.ORM.DataType)> dic = new Dictionary<string, (Type, AntData.ORM.DataType)>();
+        private static readonly Dictionary<string, (Type, AntData.ORM.DataType)> dic = new Dictionary<string, (Type, AntData.ORM.DataType)>();
 
         static MysqlDbTypeMapper()
         {
@@ -48,82 +49,97 @@ namespace Canal.SqlParse
             dic.Add("year", (typeof(int), AntData.ORM.DataType.Int32));
         }
         private readonly DbContext<DB> _dbContext;
-        public MysqlDbTypeMapper(DbContext<DB> dbContext)
+        private readonly ILogger<MysqlDbTypeMapper> _logger;
+        public MysqlDbTypeMapper(DbContext<DB> dbContext,ILogger<MysqlDbTypeMapper> logger)
         {
             _dbContext = dbContext;
+            _logger = logger;
         }
         /// <summary>
         /// 执行到db
         /// </summary>
         /// <returns></returns>
-        public (bool, string) TransferToDb(DataChange data)
+        public DbTransferResult TransferToDb(DataChange data)
         {
-            if (data == null || string.IsNullOrEmpty(data.DbName) || string.IsNullOrEmpty(data.TableName) || string.IsNullOrEmpty(data.EventType))
+            try
             {
-                return (false, "param error");
-            }
-
-            var cloumns = data.AfterColumnList == null || !data.AfterColumnList.Any()
-                ? data.BeforeColumnList
-                : data.AfterColumnList;
-
-            var primaryKey = cloumns.FirstOrDefault(r => r.IsKey);
-            if (primaryKey == null || string.IsNullOrEmpty(primaryKey.Value))
-            {
-                //没有主键
-                return (false, "data without primaryKey");
-            }
-
-
-            var sql = $"select count(*) from {data.TableName} where `{primaryKey.Name}` = @primaryValue";
-            //判断是否主键已存在？
-            var isExist = _dbContext.Execute<int>(sql, new { primaryValue = primaryKey.Value }) == 1;
-
-            if (data.EventType.Equals("INSERT"))
-            {
-                if (isExist)
+                if (data == null || string.IsNullOrEmpty(data.DbName) || string.IsNullOrEmpty(data.TableName) || string.IsNullOrEmpty(data.EventType))
                 {
-                    return (true, "insert sql, but primaryKey is exist");
+                    return new DbTransferResult(false, "param error");
                 }
 
-                var insertSql = this.GetInsertSql(data.TableName, cloumns);
-                _dbContext.Execute(insertSql.Item1, insertSql.Item2.ToArray());
-            }
-            else if (data.EventType.Equals("DELETE"))
-            {
-                if (!isExist)
+                var cloumns = data.AfterColumnList == null || !data.AfterColumnList.Any()
+                    ? data.BeforeColumnList
+                    : data.AfterColumnList;
+
+                var primaryKey = cloumns.FirstOrDefault(r => r.IsKey);
+                if (primaryKey == null || string.IsNullOrEmpty(primaryKey.Value))
                 {
-                    return (true, "delete but promaryKey is not exist");
+                    //没有主键
+                    return new DbTransferResult(false, "data without primaryKey");
                 }
 
-                var deleteSql = this.GetDeleteSql(data.TableName, cloumns);
-                _dbContext.Execute(deleteSql.Item1, deleteSql.Item2.ToArray());
-            }
-            else if (data.EventType.Equals("UPDATE"))
-            {
-                if (!isExist)
+                bool IsExist()
                 {
-                    var insertSql = this.GetInsertSql(data.TableName, cloumns);
-                    _dbContext.Execute(insertSql.Item1, insertSql.Item2.ToArray());
+                    var sql = $"select count(*) from {data.TableName} where `{primaryKey.Name}` = @primaryValue";
+                    //判断是否主键已存在？
+                    var isExist = _dbContext.Execute<int>(sql, new {primaryValue = primaryKey.Value}) == 1;
+                    return isExist;
+                }
+
+
+                if (data.EventType.Equals("INSERT"))
+                {
+                    //if (IsExist())
+                    //{
+                    //    return new DbTransferResult(true, "insert sql, but primaryKey is exist");
+                    //}
+
+                    try
+                    {
+                        var insertSql = this.GetInsertSql(data.TableName, cloumns);
+                        _dbContext.Execute(insertSql.Item1, insertSql.Item2.ToArray());
+                    }
+                    catch (Exception)
+                    {
+                        //ignore
+                    }
+                }
+                else if (data.EventType.Equals("DELETE"))
+                {
+                    var deleteSql = this.GetDeleteSql(data.TableName, cloumns);
+                    _dbContext.Execute(deleteSql.Item1, deleteSql.Item2.ToArray());
+                }
+                else if (data.EventType.Equals("UPDATE"))
+                {
+                    if (!IsExist())
+                    {
+                        var insertSql = this.GetInsertSql(data.TableName, cloumns);
+                        _dbContext.Execute(insertSql.Item1, insertSql.Item2.ToArray());
+                    }
+                    else
+                    {
+                        var updateSql = this.GetUpdateSql(data.TableName, cloumns);
+                        _dbContext.Execute(updateSql.Item1, updateSql.Item2.ToArray());
+                    }
                 }
                 else
                 {
-                    var updateSql = this.GetUpdateSql(data.TableName, cloumns);
-                    _dbContext.Execute(updateSql.Item1, updateSql.Item2.ToArray());
+                    return new DbTransferResult(false, "EventType is invalid");
                 }
+
+                return new DbTransferResult(true, string.Empty);
             }
-            else
+            catch (Exception e)
             {
-
-                return (false, "EventType is invalid");
+                _logger.LogError(e,nameof(TransferToDb));
+                return new DbTransferResult(false,e.Message);
             }
-
-            return (true, string.Empty);
 
 
         }
 
-        public (string, List<DataParameter>) GetInsertSql(string tabelName, IList<ColumnData> cols)
+        private (string, List<DataParameter>) GetInsertSql(string tabelName, IList<ColumnData> cols)
         {
             var sql = $"insert into {tabelName} ";
             var columnStrList = new List<string>();
@@ -148,7 +164,7 @@ namespace Canal.SqlParse
             return (sql, dataParamList);
         }
 
-        public (string, List<DataParameter>) GetDeleteSql(string tabelName, IList<ColumnData> cols)
+        private (string, List<DataParameter>) GetDeleteSql(string tabelName, IList<ColumnData> cols)
         {
             var index = cols.First(r => r.IsKey);
             var param = GetDataParameter(index);
@@ -160,7 +176,7 @@ namespace Canal.SqlParse
             return (sql, new List<DataParameter> { param });
         }
 
-        public (string, List<DataParameter>) GetUpdateSql(string tabelName, IList<ColumnData> cols)
+        private (string, List<DataParameter>) GetUpdateSql(string tabelName, IList<ColumnData> cols)
         {
             var sql = $"update {tabelName} set ";
             var dataParamList = new List<DataParameter>();
@@ -185,7 +201,7 @@ namespace Canal.SqlParse
                 pair.Add($" `{column.Name}` = @{column.Name} ");
 
             }
-            sql += $" {string.Join(",", pair)} where {index.Name} = @{index.Name} ";
+            sql += $" {string.Join(",", pair)} where `{index.Name}` = @{index.Name} ";
             dataParamList.Add(paramIndex);
             return (sql, dataParamList);
         }

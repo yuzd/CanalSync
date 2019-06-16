@@ -27,7 +27,7 @@ namespace CanalTransferDb
 
             if (string.IsNullOrEmpty(connectionString))
             {
-                connectionString = builderConfig["Mysql.ConnectionString"];
+                connectionString = builderConfig["Mysql:ConnectionString"];
             }
 
             var builder = new HostBuilder()

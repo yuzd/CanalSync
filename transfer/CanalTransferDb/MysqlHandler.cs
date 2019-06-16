@@ -18,24 +18,6 @@ using Newtonsoft.Json;
 namespace CanalTransferDb
 {
 
-    public class TestHandler:INotificationHandler<CanalBody>
-    {
-
-        private readonly IDbTransfer _dbTransfer;
-        public TestHandler(IDbTransfer dbTransfer)
-        {
-            _dbTransfer = dbTransfer;
-        }
-        public Task Handle(CanalBody notification)
-        {
-            //写消费逻辑
-            var messageStr = JsonConvert.SerializeObject(notification.Message);
-            Canal.SqlParse.Models.canal.DataChange data = messageStr.JsonToObject<Canal.SqlParse.Models.canal.DataChange>();
-            _dbTransfer.TransferToDb(data);
-            return Task.CompletedTask;;
-        }
-    }
-
     public class MysqlHandler : INotificationHandler<CanalBody>
     {
         private readonly ILogger _logger;
@@ -74,9 +56,9 @@ namespace CanalTransferDb
             var messageStr = JsonConvert.SerializeObject(message);
             Canal.SqlParse.Models.canal.DataChange data = messageStr.JsonToObject<Canal.SqlParse.Models.canal.DataChange>();
             var result = _dbTypeMapper.TransferToDb(data);
-            if (!result.Item1)
+            if (!result.Success)
             {
-                _logger.LogError($"Topic:{message.CanalDestination+"."+message.DbName+"."+message.TableName},Message:{messageStr},Error:{result.Item2}");
+                _logger.LogError($"Topic:{message.CanalDestination+"."+message.DbName+"."+message.TableName},Message:{messageStr},Error:{result.Msg}");
             }
 
             notification.Succ = true;

@@ -48,9 +48,9 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
             {
                 DataChange data = message.Content.JsonToObject<DataChange>();
                 var result = _dbTypeMapper.TransferToDb(data);
-                if (!result.Item1)
+                if (!result.Success)
                 {
-                    OnAction?.Invoke(MessageLevel.Error, $"TransferToDb Error", new Exception(result.Item2));
+                    OnAction?.Invoke(MessageLevel.Error, $"TransferToDb Error", new Exception(result.Msg));
                 }
             }
             catch (Exception ex)

@@ -112,9 +112,9 @@ namespace CanalRedis.Client
 
                 DataChange data = message.JsonToObject<DataChange>();
                 var result = _dbTypeMapper.TransferToDb( data);
-                if (!result.Item1)
+                if (!result.Success)
                 {
-                    _logger.LogError($"Topic:{topic},Message:{message},Error:{result.Item2}");
+                    _logger.LogError($"Topic:{topic},Message:{message},Error:{result.Msg}");
                 }
             }
             catch (Exception e)
