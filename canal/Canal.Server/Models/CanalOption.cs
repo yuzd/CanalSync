@@ -25,7 +25,6 @@ namespace Canal.Server.Models
         public string Subscribe { get; set; }
         public string MysqlName { get; set; }
         public string MysqlPwd { get; set; }
-        public int Timer { get; set; }
         public int GetCountsPerTimes { get; set; }
 
     }

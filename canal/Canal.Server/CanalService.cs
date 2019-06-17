@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -22,21 +23,28 @@ namespace Canal.Server
     {
         private readonly ILogger _logger;
         private readonly CanalOption _canalOption;
-        private System.Threading.Timer _canalTimer;
         private ICanalConnector _canalConnector;
         private bool _isDispose = false;
         private readonly IServiceScope _scope;
         private readonly IConfiguration _configuration;
         private readonly List<System.Type> _registerTypeList;
 
-        private Queue<long> queue = new Queue<long>(100);
+        private readonly ConcurrentQueue<long> _queue = new ConcurrentQueue<long>();
+        private readonly ConcurrentQueue<CanalQueueData> _canalQueue = new ConcurrentQueue<CanalQueueData>();
 
+        private volatile bool _resetFlag = false;
+        private readonly AutoResetEvent _condition = new AutoResetEvent(false);
         public CanalService(ILogger<CanalService> logger, IOptions<CanalOption> canalOption, IServiceScopeFactory scopeFactory, IConfiguration configuration, CanalConsumeRegister register)
         {
             _logger = logger;
             _registerTypeList = new List<System.Type>();
             if (register.SingletonConsumeList != null && register.SingletonConsumeList.Any()) _registerTypeList.AddRange(register.SingletonConsumeList);
             if (register.ConsumeList != null && register.ConsumeList.Any()) _registerTypeList.AddRange(register.ConsumeList);
+            if (!_registerTypeList.Any())
+            {
+                throw new ArgumentNullException(nameof(_registerTypeList));
+            }
+
             _configuration = configuration;
             _canalOption = canalOption?.Value;
             if (_canalOption == null)
@@ -48,7 +56,7 @@ namespace Canal.Server
 
             if (string.IsNullOrEmpty(_canalOption.Host) || string.IsNullOrEmpty(_canalOption.Destination) ||
                 string.IsNullOrEmpty(_canalOption.MysqlName)
-                || string.IsNullOrEmpty(_canalOption.MysqlPwd) || _canalOption.Port < 1 || _canalOption.Timer < 1 || _canalOption.GetCountsPerTimes < 1)
+                || string.IsNullOrEmpty(_canalOption.MysqlPwd) || _canalOption.Port < 1 || _canalOption.GetCountsPerTimes < 1)
             {
                 throw new ArgumentNullException("Canal param in appsettings.json is not correct!");
             }
@@ -65,28 +73,13 @@ namespace Canal.Server
                 _canalConnector.Connect();
                 _canalConnector.Subscribe(_canalOption.Subscribe);
                 _canalConnector.Rollback();
-                _canalTimer = new System.Threading.Timer(CanalGetData, null, _canalOption.Timer * 1000, _canalOption.Timer * 1000);
-                _logger.LogInformation("canal client start success...");
+               
                 AppDomain.CurrentDomain.ProcessExit += CurrentDomainOnProcessExit;
-                new Thread(() =>
-                {
-                    while (!_isDispose)
-                    {
-                        try
-                        {
-                            var batchId = queue.Dequeue();
-                            if (batchId > 0)
-                            {
 
-                                _canalConnector.Ack(batchId); //如果程序突然关闭 cannal service 会关闭。这里就不会提交，下次重启应用消息会重复推送！
-                            }
-                        }
-                        catch (Exception)
-                        {
-                            //ignore
-                        }
-                    }
-                }).Start();
+                _logger.LogInformation("canal client start ...");
+                LazyCanalGetEntities();
+                LazyCanalDoWork();
+                CanalServerAckStart();
             }
             catch (Exception ex)
             {
@@ -101,13 +94,13 @@ namespace Canal.Server
             return Task.CompletedTask;
         }
 
+
         public void Dispose()
         {
             if (_isDispose) return;
             _isDispose = true;
             try
             {
-                _canalTimer.Change(-1, -1);
                 _canalConnector.Disconnect();
                 _logger.LogInformation("canal client stop success...");
             }
@@ -116,7 +109,6 @@ namespace Canal.Server
                 _logger.LogError(ex, "canal client stop error...");
             }
             _canalConnector = null;
-            _canalTimer.Dispose();
             _scope.Dispose();
         }
 
@@ -126,90 +118,168 @@ namespace Canal.Server
         }
 
         /// <summary>
-        /// 获取数据
+        /// 异步ack
         /// </summary>
-        private void CanalGetData(object state)
+        private void CanalServerAckStart()
         {
-            _canalTimer.Change(-1, -1);
-            try
+            new Thread(() =>
             {
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
-
-                if (_canalConnector == null) return;
-                var messageList = _canalConnector.GetWithoutAck(_canalOption.GetCountsPerTimes);
-                var batchId = messageList.Id;
-                if (batchId == -1 || messageList.Entries.Count <= 0)
+                _logger.LogInformation("canal-server ack worker thread start ...");
+                while (!_isDispose)
                 {
-                    return;
-                }
-
-                var result = Send(messageList.Entries, batchId);
-
-
-                stopwatch.Stop();
-
-                if (result.Item1 < 1) return;
-
-                var doutime = (int)stopwatch.Elapsed.TotalSeconds;
-                var time = doutime > 1 ? ParseTimeSeconds(doutime) : stopwatch.Elapsed.TotalMilliseconds + "ms";
-
-                if (result.Item2 == null)
-                {
-                    return;
-                }
-
-                foreach (var item in result.Item2)
-                {
-                    if (item.Value.Total > 0)
+                    try
                     {
-                        _logger.LogInformation($"【batchId:{batchId}】batchCount:{result.Item1},batchTime:{time},process:{item.Key},processTotal:{item.Value.Total},processSucc:{item.Value.SuccessCount},processTime:{item.Value.ProcessTime}");
-                        if (result.Item3 != null && result.Item3.Any())
+                        if (_canalConnector == null) continue;
+                        if(!_queue.TryDequeue(out var batchId)) continue;
+                        if (batchId > 0)
                         {
-                            foreach (var groupResult in result.Item3)
+
+                            _canalConnector.Ack(batchId); //如果程序突然关闭 cannal service 会关闭。这里就不会提交，下次重启应用消息会重复推送！
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        //ignore
+                    }
+                }
+            }).Start();
+        }
+
+
+        /// <summary>
+        /// 异步 获取数据
+        /// </summary>
+        private void LazyCanalGetEntities()
+        {
+            new Thread(() =>
+            {
+                _logger.LogInformation("canal receive worker thread start ...");
+                while (!_isDispose)
+                {
+                    try
+                    {
+                        if (!PreparedAndEnqueue()) continue;
+
+                        //队列里面先储备5批次 超过 5批次的话 就开始消费一个批次 在储备
+                        if (_canalQueue.Count >= 5)
+                        {
+                            _logger.LogInformation("canal receive worker waitOne ...");
+                            _resetFlag = true;
+                            _condition.WaitOne();
+                            _resetFlag = false;
+                            _logger.LogInformation("canal receive worker continue ...");
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        //ignore
+                        _logger.LogError(e,"canal receive data err ...");
+                    }
+                }
+            }).Start();
+        }
+
+        private bool PreparedAndEnqueue()
+        {
+            if (_canalConnector == null) return false;
+
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var messageList = _canalConnector.GetWithoutAck(_canalOption.GetCountsPerTimes);
+            var batchId = messageList.Id;
+            if (batchId == -1 || messageList.Entries.Count <= 0)
+            {
+                return false;
+            }
+
+            var canalBodyList = GetCanalBodyList(messageList.Entries);
+            if (canalBodyList.Count < 1)
+            {
+                return false;
+            }
+
+            stopwatch.Stop();
+
+            var doutime = (int) stopwatch.Elapsed.TotalSeconds;
+            var time = doutime > 1 ? ParseTimeSeconds(doutime) : stopwatch.Elapsed.TotalMilliseconds + "ms";
+
+
+            var canalQueueData = new CanalQueueData
+            {
+                BatchId = batchId,
+                Time = time,
+                CanalBodyList = canalBodyList
+            };
+
+            _canalQueue.Enqueue(canalQueueData);
+
+            return true;
+        }
+
+
+        private void LazyCanalDoWork()
+        {
+            new Thread(() =>
+            {
+                _logger.LogInformation("handler worker thread start ...");
+                while (!_isDispose)
+                {
+                    try
+                    {
+                        if (_canalConnector == null) continue;
+
+                        if(!_canalQueue.TryDequeue(out var canalData)) continue;
+
+                        if (canalData == null) continue;
+
+
+                        if (_resetFlag && _canalQueue.Count <= 1)
+                        {
+                            _condition.Set();
+                            _resetFlag = false;
+                        }
+
+                        var result = Send(canalData.CanalBodyList, canalData.BatchId);
+
+                        if (result.Item1 < 1 || result.Item2 == null) continue;
+
+                        foreach (var item in result.Item2)
+                        {
+                            if (item.Value.Total > 0)
                             {
-                                _logger.LogInformation($"batchId:{batchId},process:{item.Key},target:{groupResult.Item1},count:{groupResult.Item2}");
+                                _logger.LogInformation($"【batchId:{canalData.BatchId}】batchCount:{result.Item1},batchGetTime:{canalData.Time},process:{item.Key},processTotal:{item.Value.Total},processSucc:{item.Value.SuccessCount},processTime:{item.Value.ProcessTime}");
+                                if (result.Item3 != null && result.Item3.Any())
+                                {
+                                    foreach (var groupResult in result.Item3)
+                                    {
+                                        _logger.LogInformation($"batchId:{canalData.BatchId},process:{item.Key},target:{groupResult.Item1},count:{groupResult.Item2}");
+                                    }
+                                }
                             }
                         }
                     }
+                    catch (Exception)
+                    {
+                        //ignore
+                        return;
+                    }
                 }
-
-                queue.Enqueue(batchId);
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "canal get data error...");
-            }
-            finally
-            {
-                _canalTimer.Change(_canalOption.Timer * 1000, _canalOption.Timer * 1000);
-            }
+            }).Start();
         }
+
+     
 
 
         /// <summary>
         /// 发送数据
         /// 如果handler处理失败就停止 保证消息
         /// </summary>
-        /// <param name="entrys">一个entry表示一个数据库变更</param>
+        /// <param name="canalBodyList">一个entry表示一个数据库变更</param>
         /// <param name="batchId"></param>
-        private (long, Dictionary<string, ProcessResult>, List<(string, long)>) Send(List<Entry> entrys, long batchId)
+        private (long, Dictionary<string, ProcessResult>, List<(string, long)>) Send(List<CanalBody> canalBodyList, long batchId)
         {
-            var canalBodyList = GetCanalBodyList(entrys);
-            if (canalBodyList.Count < 1)
-            {
-                return (0, null, null);
-            }
-
-
-            if (_registerTypeList == null || !_registerTypeList.Any())
-            {
-                return (0, null, null);
-            }
-
+           
             var groupCount = new List<(string, long)>();
             //分组日志
             var group = canalBodyList.Select(r => r.Message).GroupBy(r => new { r.DbName, r.TableName, r.EventType });
@@ -256,7 +326,7 @@ namespace Canal.Server
                 return (canalBodyList.Count, result, groupCount);
             }
 
-
+            _queue.Enqueue(batchId);
             return (canalBodyList.Count, result, groupCount);
         }
 
@@ -348,27 +418,6 @@ namespace Canal.Server
         }
 
 
-        private List<ColumnData> DoConvertDataColumn(List<Column> columns)
-        {
-            var rt = new List<ColumnData>();
-            foreach (var c in columns)
-            {
-                var co = new ColumnData
-                {
-                    Name = c.Name,
-                    IsKey = c.IsKey,
-                    IsNull = c.IsNull,
-                    Length = c.Length,
-                    MysqlType = c.MysqlType,
-                    SqlType = c.SqlType,
-                    Updated = c.Updated,
-                    Value = c.Value
-                };
-                rt.Add(co);
-            }
-            return rt;
-
-        }
 
         private void UpdateFromEnv(CanalOption _can)
         {
@@ -404,12 +453,6 @@ namespace Canal.Server
             if (!string.IsNullOrEmpty(dbPassword))
             {
                 _can.MysqlPwd = dbPassword;
-            }
-
-            var timer = _configuration["canal.timer"];
-            if (!string.IsNullOrEmpty(timer))
-            {
-                _can.Timer = int.Parse(timer);
             }
 
             var getCountsPerTimes = _configuration["canal.getCountsPerTimes"];
