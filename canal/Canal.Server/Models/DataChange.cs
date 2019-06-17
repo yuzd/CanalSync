@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Com.Alibaba.Otter.Canal.Protocol;
 
 namespace Canal.Server.Models
 {
@@ -11,8 +12,8 @@ namespace Canal.Server.Models
         public string EventType { get; set; }
         public string CanalDestination { get; set; }
 
-        public IList<ColumnData> BeforeColumnList { get; set; }
+        public IList<Column> BeforeColumnList { get; set; }
 
-        public IList<ColumnData> AfterColumnList { get; set; }
+        public IList<Column> AfterColumnList { get; set; }
     }
 }

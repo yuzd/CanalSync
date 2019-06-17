@@ -67,7 +67,6 @@ namespace CanalRedis.Server
                 return Task.CompletedTask;
             }
 
-            //_logger.LogInformation($"Message:{message.CanalDestination + "," + message.DbName + "," + message.TableName }");
 
             var topic = !string.IsNullOrEmpty(message.CanalDestination) ? $"{message.CanalDestination}." : "";
             topic += !string.IsNullOrEmpty(message.DbName) ? $"{message.DbName}." : "";

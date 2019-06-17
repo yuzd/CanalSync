@@ -28,6 +28,9 @@ namespace Canal.Server
         private readonly IServiceScope _scope;
         private readonly IConfiguration _configuration;
         private readonly List<System.Type> _registerTypeList;
+
+        private Queue<long> queue = new Queue<long>(100);
+
         public CanalService(ILogger<CanalService> logger, IOptions<CanalOption> canalOption, IServiceScopeFactory scopeFactory, IConfiguration configuration, CanalConsumeRegister register)
         {
             _logger = logger;
@@ -65,6 +68,25 @@ namespace Canal.Server
                 _canalTimer = new System.Threading.Timer(CanalGetData, null, _canalOption.Timer * 1000, _canalOption.Timer * 1000);
                 _logger.LogInformation("canal client start success...");
                 AppDomain.CurrentDomain.ProcessExit += CurrentDomainOnProcessExit;
+                new Thread(() =>
+                {
+                    while (!_isDispose)
+                    {
+                        try
+                        {
+                            var batchId = queue.Dequeue();
+                            if (batchId > 0)
+                            {
+
+                                _canalConnector.Ack(batchId); //如果程序突然关闭 cannal service 会关闭。这里就不会提交，下次重启应用消息会重复推送！
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            //ignore
+                        }
+                    }
+                }).Start();
             }
             catch (Exception ex)
             {
@@ -151,6 +173,8 @@ namespace Canal.Server
                         }
                     }
                 }
+
+                queue.Enqueue(batchId);
             }
             catch (ObjectDisposedException)
             {
@@ -172,26 +196,26 @@ namespace Canal.Server
         /// </summary>
         /// <param name="entrys">一个entry表示一个数据库变更</param>
         /// <param name="batchId"></param>
-        private (long, Dictionary<string, ProcessResult>,List<(string,long)>) Send(List<Entry> entrys, long batchId)
+        private (long, Dictionary<string, ProcessResult>, List<(string, long)>) Send(List<Entry> entrys, long batchId)
         {
             var canalBodyList = GetCanalBodyList(entrys);
             if (canalBodyList.Count < 1)
             {
-                return (0, null,null);
+                return (0, null, null);
             }
 
 
             if (_registerTypeList == null || !_registerTypeList.Any())
             {
-                return (0, null,null);
+                return (0, null, null);
             }
 
-            var groupCount = new List<(string,long)>();
+            var groupCount = new List<(string, long)>();
             //分组日志
-            var group = canalBodyList.Select(r => r.Message).GroupBy(r => new {r.DbName, r.TableName, r.EventType});
+            var group = canalBodyList.Select(r => r.Message).GroupBy(r => new { r.DbName, r.TableName, r.EventType });
             foreach (var g in group)
             {
-                groupCount.Add(($"{g.Key.DbName}.{g.Key.TableName}.{g.Key.EventType}",g.Count()));
+                groupCount.Add(($"{g.Key.DbName}.{g.Key.TableName}.{g.Key.EventType}", g.Count()));
             }
 
             Dictionary<string, ProcessResult> result = new Dictionary<string, ProcessResult>();
@@ -232,7 +256,7 @@ namespace Canal.Server
                 return (canalBodyList.Count, result, groupCount);
             }
 
-            _canalConnector.Ack(batchId);//如果程序突然关闭 cannal service 会关闭。这里就不会提交，下次重启应用消息会重复推送！
+
             return (canalBodyList.Count, result, groupCount);
         }
 
@@ -284,18 +308,18 @@ namespace Canal.Server
                         if (eventType == EventType.Delete)
                         {
                             dataChange.EventType = "DELETE";
-                            dataChange.BeforeColumnList = DoConvertDataColumn(rowData.BeforeColumns.ToList());
+                            dataChange.BeforeColumnList = rowData.BeforeColumns.ToList(); //DoConvertDataColumn();
                         }
                         else if (eventType == EventType.Insert)
                         {
                             dataChange.EventType = "INSERT";
-                            dataChange.AfterColumnList = DoConvertDataColumn(rowData.AfterColumns.ToList());
+                            dataChange.AfterColumnList = rowData.AfterColumns.ToList();// DoConvertDataColumn();
                         }
                         else if (eventType == EventType.Update)
                         {
                             dataChange.EventType = "UPDATE";
-                            dataChange.BeforeColumnList = DoConvertDataColumn(rowData.BeforeColumns.ToList());
-                            dataChange.AfterColumnList = DoConvertDataColumn(rowData.AfterColumns.ToList());
+                            dataChange.BeforeColumnList = rowData.BeforeColumns.ToList();//DoConvertDataColumn();
+                            dataChange.AfterColumnList = rowData.AfterColumns.ToList(); //DoConvertDataColumn();
                         }
                         else
                         {
@@ -444,7 +468,7 @@ namespace Canal.Server
         }
     }
 
-    class  ProcessResult
+    class ProcessResult
     {
         public long Total { get; set; }
         public long SuccessCount { get; set; }
