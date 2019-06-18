@@ -51,15 +51,15 @@ namespace MysqlCanalMq.Server
             }
         }
 
-        public Task Handle(List<CanalBody> notificationList)
+        public Task Handle(CanalBody body)
         {
-            foreach (var notification in notificationList)
+            var notificationList = body.Message;
+            foreach (var message in notificationList)
             {
-                var message = notification.Message;
                 //过滤
                 if (_rabitMqOption.DbTables.Any() && !_rabitMqOption.DbTables.Contains(message.DbName + "." + message.TableName))
                 {
-                    return Task.CompletedTask;
+                    continue;
                 }
 
                 var ploicy = Policy.Handle<Exception>()
@@ -77,12 +77,10 @@ namespace MysqlCanalMq.Server
 
                     ploicy.Execute(() => _produceRabbitMq.Produce(message));
 
-                    notification.Succ = true;
                 }
                 catch (Exception)
                 {
                     _logger.LogError("rabbit mq send fail");
-                    throw;
                 }
             }
             return Task.CompletedTask;

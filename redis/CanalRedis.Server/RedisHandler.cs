@@ -56,18 +56,15 @@ namespace CanalRedis.Server
             AppDomain.CurrentDomain.ProcessExit += (sender, args) => Dispose();
         }
 
-        public Task Handle(List<CanalBody> notificationList)
+        public Task Handle(CanalBody body)
         {
-
-            foreach (var notification in notificationList)
+            var notificationList = body.Message;
+            foreach (var message in notificationList)
             {
-                var message = notification.Message;
-
-
                 //过滤
                 if (_option.DbTables.Any() && !_option.DbTables.Contains(message.DbName + "." + message.TableName))
                 {
-                    return Task.CompletedTask;
+                    continue;
                 }
 
 
@@ -93,17 +90,12 @@ namespace CanalRedis.Server
                     ploicy.Execute(() =>
                     {
                         //在队列的尾部添加
-                        var length = Redis.ListRightPush(topic, messageString);
-                        //设置队列的长度
-                        Redis.StringSet(topic + ".length", "" + length);
-
-                        notification.Succ = true;
+                        Redis.ListRightPush(topic, messageString);
                     });
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, $"redis mq send fail，{message.CanalDestination + "," + message.DbName + "," + message.TableName}");
-                    throw;
                 }
 
             }

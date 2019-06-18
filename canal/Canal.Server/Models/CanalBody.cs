@@ -9,12 +9,17 @@ namespace Canal.Server.Models
 {
     public class CanalBody: INotification
     {
-        public CanalBody(DataChange message)
+        public CanalBody()
+        {
+            
+        }
+        public CanalBody(IList<DataChange> message,long batchId)
         {
             Message = message;
+            BatchId = batchId;
         }
 
-        public DataChange Message { get; }
-        public bool Succ { get; set; }
+        public IList<DataChange> Message { get; }
+        public long BatchId { get; }
     }
 }

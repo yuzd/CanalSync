@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -171,6 +172,19 @@ namespace Canal.Server
                             _logger.LogInformation("canal receive worker continue ...");
                         }
                     }
+                    catch (IOException io)
+                    {
+                        _logger.LogError(io, "canal receive data err ...");
+                        try
+                        {
+                            _canalConnector.Connect();
+                            _canalConnector.Subscribe(_canalOption.Subscribe);
+                        }
+                        catch (Exception)
+                        {
+                            //ignore
+                        }
+                    }
                     catch (Exception e)
                     {
                         //ignore
@@ -189,14 +203,28 @@ namespace Canal.Server
 
             var messageList = _canalConnector.GetWithoutAck(_canalOption.GetCountsPerTimes);
             var batchId = messageList.Id;
-            if (batchId == -1 || messageList.Entries.Count <= 0)
+            if (batchId < 1)
             {
                 return false;
             }
 
-            var canalBodyList = GetCanalBodyList(messageList.Entries);
-            if (canalBodyList.Count < 1)
+            CanalBody body = new CanalBody(null, batchId);
+            if (messageList.Entries.Count <= 0)
             {
+                _canalQueue.Enqueue(new CanalQueueData
+                {
+                    CanalBody = body
+                });
+                return false;
+            }
+
+            var canalBody = GetCanalBodyList(messageList.Entries, batchId);
+            if (canalBody.Message==null || canalBody.Message.Count < 1)
+            {
+                _canalQueue.Enqueue(new CanalQueueData
+                {
+                    CanalBody = body
+                });
                 return false;
             }
 
@@ -205,12 +233,10 @@ namespace Canal.Server
             var doutime = (int) stopwatch.Elapsed.TotalSeconds;
             var time = doutime > 1 ? ParseTimeSeconds(doutime) : stopwatch.Elapsed.TotalMilliseconds + "ms";
 
-
             var canalQueueData = new CanalQueueData
             {
-                BatchId = batchId,
                 Time = time,
-                CanalBodyList = canalBodyList
+                CanalBody = canalBody
             };
 
             _canalQueue.Enqueue(canalQueueData);
@@ -241,24 +267,17 @@ namespace Canal.Server
                             _resetFlag = false;
                         }
 
-                        var result = Send(canalData.CanalBodyList, canalData.BatchId);
-
-                        if (result.Item1 < 1 || result.Item2 == null) continue;
-
-                        foreach (var item in result.Item2)
+                       
+                        if (canalData.CanalBody.Message == null)
                         {
-                            if (item.Value.Total > 0)
-                            {
-                                _logger.LogInformation($"【batchId:{canalData.BatchId}】batchCount:{result.Item1},batchGetTime:{canalData.Time},process:{item.Key},processTotal:{item.Value.Total},processSucc:{item.Value.SuccessCount},processTime:{item.Value.ProcessTime}");
-                                if (result.Item3 != null && result.Item3.Any())
-                                {
-                                    foreach (var groupResult in result.Item3)
-                                    {
-                                        _logger.LogInformation($"batchId:{canalData.BatchId},process:{item.Key},target:{groupResult.Item1},count:{groupResult.Item2}");
-                                    }
-                                }
-                            }
+                            if(canalData.CanalBody.BatchId > 0) _queue.Enqueue(canalData.CanalBody.BatchId);
+                            continue;
                         }
+
+                        _logger.LogInformation($"【batchId:{canalData.CanalBody.BatchId}】batchCount:{canalData.CanalBody.Message.Count},batchGetTime:{canalData.Time}");
+
+                        Send(canalData.CanalBody);
+                        _queue.Enqueue(canalData.CanalBody.BatchId);
                     }
                     catch (Exception)
                     {
@@ -273,59 +292,32 @@ namespace Canal.Server
         /// 发送数据
         /// 如果handler处理失败就停止 保证消息
         /// </summary>
-        /// <param name="canalBodyList">一个entry表示一个数据库变更</param>
-        /// <param name="batchId"></param>
-        private (long, Dictionary<string, ProcessResult>, List<(string, long)>) Send(List<CanalBody> canalBodyList, long batchId)
+        /// <param name="canalBody">一个entry表示一个数据库变更</param>
+        private void Send(CanalBody canalBody)
         {
-           
-            var groupCount = new List<(string, long)>();
-            //分组日志
-            var group = canalBodyList.Select(r => r.Message).GroupBy(r => new { r.DbName, r.TableName, r.EventType });
-            foreach (var g in group)
-            {
-                groupCount.Add(($"{g.Key.DbName}.{g.Key.TableName}.{g.Key.EventType}", g.Count()));
-            }
-
-            Dictionary<string, ProcessResult> result = new Dictionary<string, ProcessResult>();
-            foreach (var re in _registerTypeList)
-            {
-                // ReSharper disable once AssignNullToNotNullAttribute
-                result.Add(re.FullName, new ProcessResult());
-            }
 
             try
             {
                 foreach (var type in _registerTypeList)
                 {
-                    Stopwatch stopwatch = new Stopwatch();
-                    stopwatch.Start();
-                    // ReSharper disable once AssignNullToNotNullAttribute
-                    var re = result[type.FullName];
                     var service = _scope.ServiceProvider.GetRequiredService(type) as INotificationHandler<CanalBody>;
-                    re.Total = canalBodyList.Count;
-                    service?.Handle(canalBodyList).ConfigureAwait(false).GetAwaiter().GetResult();
-                    re.SuccessCount = canalBodyList.Count(r => r.Succ);
-                    stopwatch.Stop();
-                    var doutime = (int)stopwatch.Elapsed.TotalSeconds;
-                    var time = doutime > 1 ? ParseTimeSeconds(doutime) : stopwatch.Elapsed.TotalMilliseconds + "ms";
-                    re.ProcessTime = time;
+                    service?.Handle(canalBody).ConfigureAwait(false).GetAwaiter().GetResult();
                 }
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "canal produce error,end process!");
                 Dispose();
-                return (canalBodyList.Count, result, groupCount);
+                return;
             }
 
-            _queue.Enqueue(batchId);
-            return (canalBodyList.Count, result, groupCount);
+           
         }
 
 
-        private List<CanalBody> GetCanalBodyList(List<Entry> entrys)
+        private CanalBody GetCanalBodyList(List<Entry> entrys,long batchId)
         {
-            var result = new List<CanalBody>();
+            var result = new List<DataChange>();
             foreach (var entry in entrys)
             {
                 if (entry.EntryType == EntryType.Transactionbegin || entry.EntryType == EntryType.Transactionend)
@@ -400,13 +392,12 @@ namespace Canal.Server
                             continue;
                         }
 
-                        var message = new CanalBody(dataChange);
-                        result.Add(message);
+                        result.Add(dataChange);
                     }
                 }
             }
 
-            return result;
+            return new CanalBody(result, batchId);
         }
 
 
@@ -503,10 +494,4 @@ namespace Canal.Server
         }
     }
 
-    class ProcessResult
-    {
-        public long Total { get; set; }
-        public long SuccessCount { get; set; }
-        public string ProcessTime { get; set; }
-    }
 }

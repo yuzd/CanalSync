@@ -4,6 +4,6 @@ namespace CanalTransferDb
 {
     public class MysqlOption
     {
-        public List<string> DbTables { get; set; }
+        public List<string> DbTables { get; set; } = new List<string>();
     }
 }
