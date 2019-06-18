@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Canal.Model;
 using Canal.Server.Interface;
 using Canal.Server.Models;
 using CanalSharp.Client;
@@ -268,9 +269,6 @@ namespace Canal.Server
             }).Start();
         }
 
-     
-
-
         /// <summary>
         /// 发送数据
         /// 如果handler处理失败就停止 保证消息
@@ -303,16 +301,10 @@ namespace Canal.Server
                     stopwatch.Start();
                     // ReSharper disable once AssignNullToNotNullAttribute
                     var re = result[type.FullName];
-                    foreach (var message in canalBodyList)
-                    {
-                        var service = _scope.ServiceProvider.GetRequiredService(type) as INotificationHandler<CanalBody>;
-                        service?.Handle(message).ConfigureAwait(false).GetAwaiter().GetResult();
-                        re.Total++;
-                        if (message.Succ)
-                        {
-                            re.SuccessCount++;
-                        }
-                    }
+                    var service = _scope.ServiceProvider.GetRequiredService(type) as INotificationHandler<CanalBody>;
+                    re.Total = canalBodyList.Count;
+                    service?.Handle(canalBodyList).ConfigureAwait(false).GetAwaiter().GetResult();
+                    re.SuccessCount = canalBodyList.Count(r => r.Succ);
                     stopwatch.Stop();
                     var doutime = (int)stopwatch.Elapsed.TotalSeconds;
                     var time = doutime > 1 ? ParseTimeSeconds(doutime) : stopwatch.Elapsed.TotalMilliseconds + "ms";

@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace Canal.Server.Interface
 {
 
-    public interface INotificationHandler<in TNotification> where TNotification : INotification
+    public interface INotificationHandler<TNotification> where TNotification : INotification
     {
-        Task Handle(TNotification notification);
+        Task Handle(List<TNotification> notification);
     }
 
 

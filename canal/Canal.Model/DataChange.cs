@@ -1,7 +1,8 @@
+﻿using System;
 using System.Collections.Generic;
 using Com.Alibaba.Otter.Canal.Protocol;
 
-namespace Canal.Server.Models
+namespace Canal.Model
 {
     public class DataChange
     {
@@ -12,8 +13,8 @@ namespace Canal.Server.Models
         public string EventType { get; set; }
         public string CanalDestination { get; set; }
 
-        public IList<Column> BeforeColumnList { get; set; }
+        public List<Column> BeforeColumnList { get; set; }
 
-        public IList<Column> AfterColumnList { get; set; }
+        public List<Column> AfterColumnList { get; set; }
     }
 }

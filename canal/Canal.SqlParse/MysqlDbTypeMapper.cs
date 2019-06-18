@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using AntData.ORM;
 using AntData.ORM.Data;
+using Canal.Model;
 using Canal.SqlParse.Models;
-using Canal.SqlParse.Models.canal;
+using Com.Alibaba.Otter.Canal.Protocol;
 using Microsoft.Extensions.Logging;
+using Type = System.Type;
 
 namespace Canal.SqlParse
 {
@@ -68,7 +69,7 @@ namespace Canal.SqlParse
                     return new DbTransferResult(false, "param error");
                 }
 
-                var cloumns = data.AfterColumnList == null || !data.AfterColumnList.Any()
+                List<Column> cloumns = data.AfterColumnList == null || !data.AfterColumnList.Any()
                     ? data.BeforeColumnList
                     : data.AfterColumnList;
 
@@ -139,7 +140,7 @@ namespace Canal.SqlParse
 
         }
 
-        private (string, List<DataParameter>) GetInsertSql(string tabelName, IList<ColumnData> cols)
+        private (string, List<DataParameter>) GetInsertSql(string tabelName, IList<Column> cols)
         {
             var sql = $"insert into {tabelName} ";
             var columnStrList = new List<string>();
@@ -164,7 +165,7 @@ namespace Canal.SqlParse
             return (sql, dataParamList);
         }
 
-        private (string, List<DataParameter>) GetDeleteSql(string tabelName, IList<ColumnData> cols)
+        private (string, List<DataParameter>) GetDeleteSql(string tabelName, List<Column> cols)
         {
             var index = cols.First(r => r.IsKey);
             var param = GetDataParameter(index);
@@ -176,7 +177,7 @@ namespace Canal.SqlParse
             return (sql, new List<DataParameter> { param });
         }
 
-        private (string, List<DataParameter>) GetUpdateSql(string tabelName, IList<ColumnData> cols)
+        private (string, List<DataParameter>) GetUpdateSql(string tabelName, List<Column> cols)
         {
             var sql = $"update {tabelName} set ";
             var dataParamList = new List<DataParameter>();
@@ -206,7 +207,7 @@ namespace Canal.SqlParse
             return (sql, dataParamList);
         }
 
-        private static DataParameter GetDataParameter(ColumnData column)
+        private static DataParameter GetDataParameter(Column column)
         {
             var columnTypeStr = column.MysqlType.ToLower().Split('(')[0];
             if (!dic.TryGetValue(columnTypeStr, out (Type, AntData.ORM.DataType) targetType))

@@ -31,6 +31,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CanalTransferDb", "transfer
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "canal", "canal", "{A90297EC-F62D-4E4D-A64D-01F4FFBDBEE8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Canal.Model", "canal\Canal.Model\Canal.Model.csproj", "{994C8038-5D23-4535-9C97-917D70D82EF8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,10 @@ Global
 		{E1E41F12-1610-4B40-90CB-6A1B1B799DEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E1E41F12-1610-4B40-90CB-6A1B1B799DEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E1E41F12-1610-4B40-90CB-6A1B1B799DEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{994C8038-5D23-4535-9C97-917D70D82EF8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{994C8038-5D23-4535-9C97-917D70D82EF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{994C8038-5D23-4535-9C97-917D70D82EF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{994C8038-5D23-4535-9C97-917D70D82EF8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -86,6 +92,7 @@ Global
 		{F230282D-0360-4F46-82BC-D8201D173A5B} = {95F51309-05E8-4168-9337-23A5B5D3C22C}
 		{E1E41F12-1610-4B40-90CB-6A1B1B799DEA} = {F230282D-0360-4F46-82BC-D8201D173A5B}
 		{A90297EC-F62D-4E4D-A64D-01F4FFBDBEE8} = {95F51309-05E8-4168-9337-23A5B5D3C22C}
+		{994C8038-5D23-4535-9C97-917D70D82EF8} = {A90297EC-F62D-4E4D-A64D-01F4FFBDBEE8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {60095D5A-9360-4314-97D4-AF0903E71287}

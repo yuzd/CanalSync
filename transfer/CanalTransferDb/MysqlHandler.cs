@@ -4,16 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using AntData.ORM.Data;
 using Canal.Server.Interface;
 using Canal.Server.Models;
 using Canal.SqlParse;
-using Canal.SqlParse.Models;
-using Canal.SqlParse.StaticExt;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 
 namespace CanalTransferDb
 {
@@ -43,25 +39,26 @@ namespace CanalTransferDb
 
             _logger.LogInformation($"Mysql Produce Listening: {string.Join(",", _option.DbTables)}");
         }
-        public Task Handle(CanalBody notification)
+        public Task Handle(List<CanalBody> notificationList)
         {
-            var message = notification.Message;
-
-            //过滤
-            if (_option.DbTables.Any() && !_option.DbTables.Contains(message.DbName + "." + message.TableName))
+            foreach (var notification in notificationList)
             {
-                return Task.CompletedTask;
-            }
+                var message = notification.Message;
 
-            var messageStr = JsonConvert.SerializeObject(message);
-            Canal.SqlParse.Models.canal.DataChange data = messageStr.JsonToObject<Canal.SqlParse.Models.canal.DataChange>();
-            var result = _dbTypeMapper.TransferToDb(data);
-            if (!result.Success)
-            {
-                _logger.LogError($"Topic:{message.CanalDestination+"."+message.DbName+"."+message.TableName},Message:{messageStr},Error:{result.Msg}");
-            }
+                //过滤
+                if (_option.DbTables.Any() && !_option.DbTables.Contains(message.DbName + "." + message.TableName))
+                {
+                    return Task.CompletedTask;
+                }
 
-            notification.Succ = true;
+                var result = _dbTypeMapper.TransferToDb(message);
+                if (!result.Success)
+                {
+                    _logger.LogError($"Topic:{message.CanalDestination + "." + message.DbName + "." + message.TableName},Message:{Newtonsoft.Json.JsonConvert.SerializeObject(message)},Error:{result.Msg}");
+                }
+
+                notification.Succ = true;
+            }
             return Task.CompletedTask;
         }
 

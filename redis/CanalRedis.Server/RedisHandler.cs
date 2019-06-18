@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -55,52 +56,56 @@ namespace CanalRedis.Server
             AppDomain.CurrentDomain.ProcessExit += (sender, args) => Dispose();
         }
 
-        public Task Handle(CanalBody notification)
+        public Task Handle(List<CanalBody> notificationList)
         {
 
-            var message = notification.Message;
-
-
-            //过滤
-            if (_option.DbTables.Any() && !_option.DbTables.Contains(message.DbName + "." + message.TableName))
+            foreach (var notification in notificationList)
             {
-                return Task.CompletedTask;
-            }
+                var message = notification.Message;
 
 
-            var topic = !string.IsNullOrEmpty(message.CanalDestination) ? $"{message.CanalDestination}." : "";
-            topic += !string.IsNullOrEmpty(message.DbName) ? $"{message.DbName}." : "";
-            topic += message.TableName;
-            if (string.IsNullOrEmpty(topic)) throw new ArgumentNullException(nameof(topic));
-            string messageString = JsonConvert.SerializeObject(message);
-
-            var ploicy = Policy.Handle<Exception>()
-                .WaitAndRetry(new[]
+                //过滤
+                if (_option.DbTables.Any() && !_option.DbTables.Contains(message.DbName + "." + message.TableName))
                 {
-                    TimeSpan.FromSeconds(6),
-                    TimeSpan.FromSeconds(12),
-                    TimeSpan.FromSeconds(18),
-                    TimeSpan.FromSeconds(24),
-                    TimeSpan.FromSeconds(30),
-                    TimeSpan.FromSeconds(36)
-                });
-            try
-            {
+                    return Task.CompletedTask;
+                }
 
-                ploicy.Execute(() =>
+
+                var topic = !string.IsNullOrEmpty(message.CanalDestination) ? $"{message.CanalDestination}." : "";
+                topic += !string.IsNullOrEmpty(message.DbName) ? $"{message.DbName}." : "";
+                topic += message.TableName;
+                if (string.IsNullOrEmpty(topic)) throw new ArgumentNullException(nameof(topic));
+                string messageString = JsonConvert.SerializeObject(message);
+
+                var ploicy = Policy.Handle<Exception>()
+                    .WaitAndRetry(new[]
+                    {
+                        TimeSpan.FromSeconds(6),
+                        TimeSpan.FromSeconds(12),
+                        TimeSpan.FromSeconds(18),
+                        TimeSpan.FromSeconds(24),
+                        TimeSpan.FromSeconds(30),
+                        TimeSpan.FromSeconds(36)
+                    });
+                try
                 {
-                    //在队列的尾部添加
-                    var length = Redis.ListRightPush(topic, messageString);
-                    //设置队列的长度
-                    Redis.StringSet(topic + ".length", "" + length);
 
-                    notification.Succ = true;
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"redis mq send fail，{message.CanalDestination + "," + message.DbName + "," + message.TableName}");
-                throw;
+                    ploicy.Execute(() =>
+                    {
+                        //在队列的尾部添加
+                        var length = Redis.ListRightPush(topic, messageString);
+                        //设置队列的长度
+                        Redis.StringSet(topic + ".length", "" + length);
+
+                        notification.Succ = true;
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"redis mq send fail，{message.CanalDestination + "," + message.DbName + "," + message.TableName}");
+                    throw;
+                }
+
             }
 
             return Task.CompletedTask;

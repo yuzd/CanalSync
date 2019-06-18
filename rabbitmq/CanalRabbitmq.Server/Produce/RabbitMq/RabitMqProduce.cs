@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Text;
-using Canal.Server.Models;
+using Canal.Model;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 

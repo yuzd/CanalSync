@@ -1,6 +1,6 @@
 ﻿using AntData.ORM.Data;
 using System.Collections.Generic;
-using Canal.SqlParse.Models.canal;
+using Canal.Model;
 
 namespace Canal.SqlParse
 {

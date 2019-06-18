@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq;
 using AntData.ORM.Data;
+using Canal.Model;
 using Canal.SqlParse;
 using Canal.SqlParse.Models;
-using Canal.SqlParse.Models.canal;
 using Canal.SqlParse.StaticExt;
 using MysqlCanalMq.Server.RabbitMq;
 using RabbitMQ.Client;

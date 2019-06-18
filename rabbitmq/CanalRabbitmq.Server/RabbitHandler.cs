@@ -51,36 +51,39 @@ namespace MysqlCanalMq.Server
             }
         }
 
-        public Task Handle(CanalBody notification)
+        public Task Handle(List<CanalBody> notificationList)
         {
-            var message = notification.Message;
-            //过滤
-            if (_rabitMqOption.DbTables.Any() && !_rabitMqOption.DbTables.Contains(message.DbName + "." + message.TableName))
+            foreach (var notification in notificationList)
             {
-                return Task.CompletedTask;
-            }
-
-            var ploicy = Policy.Handle<Exception>()
-                .WaitAndRetry(new[]
+                var message = notification.Message;
+                //过滤
+                if (_rabitMqOption.DbTables.Any() && !_rabitMqOption.DbTables.Contains(message.DbName + "." + message.TableName))
                 {
-                    TimeSpan.FromSeconds(2),
-                    TimeSpan.FromSeconds(4),
-                    TimeSpan.FromSeconds(6),
-                    TimeSpan.FromSeconds(8),
-                    TimeSpan.FromSeconds(15),
-                    TimeSpan.FromSeconds(30)
-                });
-            try
-            {
-                
-                ploicy.Execute(() => _produceRabbitMq.Produce(message));
+                    return Task.CompletedTask;
+                }
 
-                notification.Succ = true;
-            }
-            catch (Exception)
-            {
-                _logger.LogError("rabbit mq send fail");
-                throw;
+                var ploicy = Policy.Handle<Exception>()
+                    .WaitAndRetry(new[]
+                    {
+                        TimeSpan.FromSeconds(2),
+                        TimeSpan.FromSeconds(4),
+                        TimeSpan.FromSeconds(6),
+                        TimeSpan.FromSeconds(8),
+                        TimeSpan.FromSeconds(15),
+                        TimeSpan.FromSeconds(30)
+                    });
+                try
+                {
+
+                    ploicy.Execute(() => _produceRabbitMq.Produce(message));
+
+                    notification.Succ = true;
+                }
+                catch (Exception)
+                {
+                    _logger.LogError("rabbit mq send fail");
+                    throw;
+                }
             }
             return Task.CompletedTask;
         }
