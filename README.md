@@ -68,3 +68,6 @@ Install-Package Canal.SqlParse
 ## 欧洲与中国的2个mysql库 使用上述方法进行同步的测试
 **结果： 同步速度在100~200qps**
 ![image](https://images4.c-ctrip.com/target/zb0u15000000xvmizF51C.png)
+
+## TODO
+消费端改成用air2来拉取
