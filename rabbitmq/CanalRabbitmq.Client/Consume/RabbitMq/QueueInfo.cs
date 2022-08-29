@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MysqlCanalMq.Common.Consume.RabbitMq
+namespace CanalRabbitmq.Client.Consume.RabbitMq
 {
     public partial class QueueInfo
     {

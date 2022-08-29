@@ -5,7 +5,7 @@ using Canal.Model;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 
-namespace MysqlCanalMq.Server.RabbitMq
+namespace CanalRabbitmq.Server.Produce.RabbitMq
 {
     public class RabitMqProduce 
     {

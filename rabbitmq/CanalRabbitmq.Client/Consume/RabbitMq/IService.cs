@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MysqlCanalMq.Common.Consume.RabbitMq
+namespace CanalRabbitmq.Client.Consume.RabbitMq
 {
     public interface IService
     {

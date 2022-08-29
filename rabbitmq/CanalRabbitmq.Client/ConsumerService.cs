@@ -5,17 +5,15 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using AntData.ORM.Data;
 using Canal.SqlParse;
-using Canal.SqlParse.Models;
+using CanalRabbitmq.Client.Consume.RabbitMq;
+using CanalRabbitmq.Client.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MysqlCanalMq.Common.Consume.RabbitMq;
-using MysqlCanalMq.Server.RabbitMq;
 
-namespace MysqlCanalMq.Client
+namespace CanalRabbitmq.Client
 {
     public class ConsumerService : IHostedService,IDisposable
     {

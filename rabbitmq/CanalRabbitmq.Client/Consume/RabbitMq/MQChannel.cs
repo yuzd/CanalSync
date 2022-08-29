@@ -3,7 +3,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Framing;
 
-namespace MysqlCanalMq.Common.Consume.RabbitMq
+namespace CanalRabbitmq.Client.Consume.RabbitMq
 {
     public class MQChannel
     {
@@ -27,24 +27,13 @@ namespace MysqlCanalMq.Common.Consume.RabbitMq
             this.RoutekeyName = routekey;
         }
 
-        /// <summary>
-        ///  向当前队列发送消息
-        /// </summary>
-        /// <param name="content"></param>
-        public void Publish(string content)
-        {
-            byte[] body = MQConnection.UTF8.GetBytes(content);
-            IBasicProperties prop = new BasicProperties();
-            prop.DeliveryMode = 1;
-            Consumer.Model.BasicPublish(this.ExchangeName, this.RoutekeyName, false, prop, body);
-        }
 
         internal void Receive(object sender, BasicDeliverEventArgs e)
         {
             MessageBody body = new MessageBody();
             try
             {
-                string content = MQConnection.UTF8.GetString(e.Body);
+                string content = MQConnection.UTF8.GetString(e.Body.ToArray());
                 body.Content = content;
                 body.Consumer = (EventingBasicConsumer)sender;
                 body.BasicDeliver = e;

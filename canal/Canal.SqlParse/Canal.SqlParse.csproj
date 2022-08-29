@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netstandard2.0</TargetFramework>
+        <TargetFramework>netstandard2.1</TargetFramework>
         <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Authors>yuzd</Authors>
@@ -11,9 +11,9 @@
         <Version>1.0.4</Version>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="AntData.Core" Version="1.4.0" />
+        <PackageReference Include="AntData.Core" Version="1.5.5" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-        <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.0.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.2.0" />
     </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\Canal.Model\Canal.Model.csproj" />

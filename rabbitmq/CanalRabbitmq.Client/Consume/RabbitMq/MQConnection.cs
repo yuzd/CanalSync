@@ -1,8 +1,8 @@
 ﻿using System.Text;
-using MysqlCanalMq.Server.RabbitMq;
+using CanalRabbitmq.Client.Models;
 using RabbitMQ.Client;
 
-namespace MysqlCanalMq.Common.Consume.RabbitMq
+namespace CanalRabbitmq.Client.Consume.RabbitMq
 {
     public class MQConnection
     {

@@ -1,7 +1,7 @@
 ﻿using System;
 using RabbitMQ.Client.Events;
 
-namespace MysqlCanalMq.Common.Consume.RabbitMq
+namespace CanalRabbitmq.Client.Consume.RabbitMq
 {
     public class MessageBody
     {

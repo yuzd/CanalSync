@@ -1,18 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Canal.Server.Interface;
 using Canal.Server.Models;
+using CanalRabbitmq.Server.Produce.RabbitMq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MysqlCanalMq.Server.RabbitMq;
 using Polly;
 
-namespace MysqlCanalMq.Server
+namespace CanalRabbitmq.Server
 {
     public class RabbitHandler : INotificationHandler<CanalBody>,IDisposable
     {

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.421
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32328.378
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CanalRabbitmq.Client", "rabbitmq\CanalRabbitmq.Client\CanalRabbitmq.Client.csproj", "{DCA82B1D-231F-4608-A944-5B57B961E299}"
 EndProject
@@ -31,7 +31,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CanalTransferDb", "transfer
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "canal", "canal", "{A90297EC-F62D-4E4D-A64D-01F4FFBDBEE8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Canal.Model", "canal\Canal.Model\Canal.Model.csproj", "{994C8038-5D23-4535-9C97-917D70D82EF8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Canal.Model", "canal\Canal.Model\Canal.Model.csproj", "{994C8038-5D23-4535-9C97-917D70D82EF8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

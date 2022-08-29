@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MysqlCanalMq.Server.RabbitMq
+namespace CanalRabbitmq.Client.Models
 {
     public class RabitMqOption
     {

@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Canal.Server;
+using CanalRabbitmq.Server.Produce.RabbitMq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MysqlCanalMq.Server.RabbitMq;
 using NLog.Extensions.Logging;
 
-namespace MysqlCanalMq.Server
+namespace CanalRabbitmq.Server
 {
     class Program
     {

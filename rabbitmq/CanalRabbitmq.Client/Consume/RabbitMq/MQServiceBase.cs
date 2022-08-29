@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
-using MysqlCanalMq.Server.RabbitMq;
+using CanalRabbitmq.Client.Models;
 
-namespace MysqlCanalMq.Common.Consume.RabbitMq
+namespace CanalRabbitmq.Client.Consume.RabbitMq
 {
     public abstract class MQServiceBase : IService
     {

@@ -1,17 +1,14 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using AntData.ORM.Data;
 using Canal.Server;
-using Canal.SqlParse;
-using Canal.SqlParse.Models;
+using CanalRabbitmq.Client.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MysqlCanalMq.Server.RabbitMq;
 using NLog.Extensions.Logging;
 
-namespace MysqlCanalMq.Client
+namespace CanalRabbitmq.Client
 {
     class Program
     {

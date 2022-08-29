@@ -1,4 +1,4 @@
-﻿namespace MysqlCanalMq.Common.Consume.RabbitMq
+﻿namespace CanalRabbitmq.Client.Consume.RabbitMq
 {
     public enum MessageLevel
     {
