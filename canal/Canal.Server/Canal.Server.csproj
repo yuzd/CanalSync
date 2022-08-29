@@ -8,7 +8,7 @@
     <Product>Canal.Server Middlerware for netcore</Product>
     <Description>Canal.Server Middlerware for netcore</Description>
     <PackageProjectUrl>https://github.com/yuzd/CanalSync</PackageProjectUrl>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.2.0" />

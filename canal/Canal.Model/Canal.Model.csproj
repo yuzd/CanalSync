@@ -2,6 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>yuzd</Authors>
+    <Company>yuzd</Company>
+    <Product>Canal.model Middlerware for netcore</Product>
+    <Description>Canal.model Middlerware for netcore</Description>
+    <PackageProjectUrl>https://github.com/yuzd/CanalSync</PackageProjectUrl>
+    <Version>1.0.5</Version>
   </PropertyGroup>
 
   <ItemGroup>
